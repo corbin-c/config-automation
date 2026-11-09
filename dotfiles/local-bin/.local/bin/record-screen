@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime="${XDG_RUNTIME_DIR:-/tmp}"
+pid_file="$runtime/workstation-wf-recorder.pid"
+log_file="$runtime/workstation-wf-recorder.log"
+recordings="${XDG_VIDEOS_DIR:-$HOME/Videos}/Recordings"
+
+is_running() {
+  [[ -s "$pid_file" ]] || return 1
+  local pid
+  pid="$(cat "$pid_file")"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  [[ "$(ps -p "$pid" -o comm= 2>/dev/null | tr -d ' ')" == wf-recorder ]]
+}
+
+stop_recording() {
+  if is_running; then
+    kill -INT "$(cat "$pid_file")"
+    rm -f "$pid_file"
+    notify-send "Screen recording" "Recording stopped." 2>/dev/null || true
+  else
+    rm -f "$pid_file"
+    echo "No active wf-recorder process." >&2
+  fi
+}
+
+case "${1:-toggle}" in
+  status)
+    if is_running; then printf '{"text":"● REC","tooltip":"Screen recording active; click to stop"}\n'; fi
+    ;;
+  stop) stop_recording ;;
+  toggle)
+    if is_running; then stop_recording; exit 0; fi
+    command -v wf-recorder >/dev/null || { echo "wf-recorder is not installed." >&2; exit 1; }
+    mkdir -p "$recordings"
+    output="$recordings/$(date +%Y-%m-%d_%H-%M-%S).mp4"
+    wf-recorder -f "$output" >"$log_file" 2>&1 &
+    pid=$!
+    printf '%s\n' "$pid" > "$pid_file"
+    sleep 0.3
+    if ! is_running; then
+      rm -f "$pid_file"
+      echo "wf-recorder failed to start; see $log_file" >&2
+      exit 1
+    fi
+    notify-send "Screen recording started" "$output" 2>/dev/null || true
+    ;;
+  *) echo "Usage: record-screen [toggle|stop|status]" >&2; exit 2 ;;
+esac

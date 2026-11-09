@@ -6,6 +6,7 @@ fzf
 build-essential
 curl
 unzip
+python3
 python3-venv
 stow
 zsh

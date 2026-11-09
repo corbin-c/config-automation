@@ -2,14 +2,17 @@
 
 ## Retained or reworked
 
-- Vim-style focus/move bindings, resize mode, French AZERTY workspace keysyms, smart resize helper.
-- Waybar's Sway workspaces/mode, battery, network, audio, idle inhibitor, clock and tray modules.
+- Vim-style focus/move bindings, resize mode, French AZERTY workspace keysyms, smart resize helper and floating mouse modifier.
+- Generic touchpad settings and an optional touchpad toggle; no source-machine device ID is embedded.
+- Waybar Sway workspaces/mode, battery, network, audio, idle inhibitor, clock, tray and a screen-recording indicator.
 - Basic idle locking via Ubuntu's packaged `swayidle` and `swaylock`.
-- Rofi launcher and file spotlight workflow (rewritten to remove assumptions about `fd` being the executable name and avoid `eval`).
+- Rofi launcher and file spotlight workflow.
 - Foot and Neovim use Catppuccin Mocha independently.
-- LazyVim config retained without the nested `.git` directory or disabled example plugin.
-- btop config retained in the optional development Stow package.
-- Swaylock's Catppuccin color configuration retained.
+- Swaylock's Catppuccin configuration restored to the Sway Stow package.
+- Screenshot clipboard copy now explicitly declares `image/png`; full and region PNGs can also be saved.
+- Screen recording is restored with Ubuntu Noble's `wf-recorder` package.
+- Power menu now asks before reboot/poweroff and includes lock, logout and suspend.
+- Zsh uses the XDG config path and upstream Oh My Zsh; Manjaro config and pyenv are removed.
 
 ## Removed by request
 
@@ -27,13 +30,16 @@
 - `/usr/share/sway/scripts` and `/usr/share/sway/templates` references.
 - Hard-coded Manjaro GTK/Kvantum theme mutation.
 - Output names and device identifiers from the source machine.
-- Absolute `/home/clement` Foot include path.
+- Absolute `/home/...` Foot include path.
 - Manjaro package manager and support links.
-- Source-machine recording mode until a supported Ubuntu 24.04 recorder package is selected.
 - Generated Zsh completion dumps, Python bytecode, btop log, Neovim `.git` directory, and unrelated pip/uv launcher shims.
 
-## Known source-config gaps
+## Deferred or intentionally simplified
 
-- The uploaded home archive did not include all linked/target files from the source machine. The old `.zshrc` symlink and `~/.config/.zshrc` were examined separately in conversation, but they are not carried forward.
-- The source Kanshi archive only contained an example file, not an active display profile. The new config starts Kanshi only if a real non-empty user config exists.
-- The source had other user scripts (`dualsub`, `flashfocus`, `rofinder.sh`, etc.). They are not copied automatically because their dependencies and current use were not established. Add them individually after review.
+- Swappy annotation is not installed because it is absent from Noble's package archive; optional invocation is retained if the user installs it independently.
+- Nerd Font installation is not automated; unsupported Nerd Font-only glyphs were removed from Waybar.
+- Swayr is not included as an additional dependency. Alt+Tab uses Sway's built-in focus cycling instead of swayr's LRU policy.
+- Waybar modules for CPU, memory, temperature, Bluetooth, GitHub notifications, playerctl, calendar and language switching were disabled or not retained pending a current-use decision.
+- `wob` OSD, `wl-clip-persist`, foot server, `flashfocus`, `sworkstyle`, autotiling and third-party helper shims remain deferred; no source audit evidence established that these were necessary on the work machine.
+- Automatic screen dimming, output-off and suspend timers remain with Ubuntu's power-management policy. Sway adds only lock timeout and lock-before-sleep.
+- Kanshi is started only if the user supplies a non-empty profile; no machine-specific outputs are assumed.

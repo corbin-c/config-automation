@@ -4,7 +4,7 @@ export ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-zsh"
 mkdir -p "$ZSH_CACHE_DIR"
 
 ZSH_THEME="robbyrussell"
-plugins=(git node nvm man sudo vscode)
+plugins=(git node man sudo vscode)
 
 if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
   source "$ZSH/oh-my-zsh.sh"

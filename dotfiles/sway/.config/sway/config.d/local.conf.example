@@ -1,5 +1,5 @@
-# Copy this file to local.conf and add machine-specific rules only.
-# First inspect actual output names with: swaymsg -t get_outputs
+# Copy to ~/.config/sway/config.d/local.conf and edit for this machine.
+# Use `swaymsg -t get_outputs` and `swaymsg -t get_inputs` to inspect identifiers.
 # Example:
-# output DP-1 scale 1.0
-# output eDP-1 scale 1.0
+# output eDP-1 scale 1.25
+# output DP-1 position 0 0

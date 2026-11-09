@@ -3,8 +3,13 @@
   "position": "left",
   "width": 42,
   "spacing": 4,
-  "modules-left": ["sway/workspaces"],
-  "modules-center": ["sway/mode"],
+  "modules-left": [
+    "sway/workspaces"
+  ],
+  "modules-center": [
+    "sway/mode",
+    "custom/recording"
+  ],
   "modules-right": [
     "custom/clipboard",
     "battery",
@@ -25,10 +30,19 @@
   },
   "battery": {
     "interval": 30,
-    "states": { "warning": 15, "critical": 5 },
+    "states": {
+      "warning": 15,
+      "critical": 5
+    },
     "format": "{icon}",
     "format-charging": " {capacity}%",
-    "format-icons": ["", "", "", "", ""],
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
     "tooltip-format": "{capacity}%"
   },
   "network": {
@@ -42,12 +56,16 @@
   "pulseaudio": {
     "scroll-step": 5,
     "format": "{icon}",
-    "format-muted": "󰝟",
+    "format-muted": "",
     "format-icons": {
       "headphone": "",
       "hands-free": "",
-      "headset": "󰋎",
-      "default": ["", "", ""]
+      "headset": "",
+      "default": [
+        "",
+        "",
+        ""
+      ]
     },
     "tooltip-format": "{volume}%",
     "on-click": "pavucontrol",
@@ -56,7 +74,10 @@
   },
   "idle_inhibitor": {
     "format": "{icon}",
-    "format-icons": { "activated": "Ⅱ", "deactivated": "Zz" },
+    "format-icons": {
+      "activated": "Ⅱ",
+      "deactivated": "Zz"
+    },
     "tooltip": false
   },
   "clock": {
@@ -65,7 +86,10 @@
     "tooltip": true,
     "tooltip-format": "{:%A %d %B %Y}\n{:%H:%M:%S}"
   },
-  "tray": { "icon-size": 18, "spacing": 6 },
+  "tray": {
+    "icon-size": 18,
+    "spacing": 6
+  },
   "custom/clipboard": {
     "format": "",
     "tooltip": true,
@@ -74,5 +98,11 @@
     "interval": 30,
     "on-click": "sh -lc '$HOME/.local/bin/clipboard-menu'",
     "on-click-right": "cliphist wipe"
+  },
+  "custom/recording": {
+    "exec": "$HOME/.local/bin/record-screen status",
+    "return-type": "json",
+    "interval": 2,
+    "on-click": "$HOME/.local/bin/record-screen stop"
   }
 }

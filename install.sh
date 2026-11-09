@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROFILE=desktop
-DRY_RUN=0
-INSTALL_PACKAGES=1
-INSTALL_OMZ=1
-SET_DEFAULT_SHELL=0
+PROFILE=desktop DRY_RUN=0 INSTALL_PACKAGES=1 INSTALL_OMZ=1 SET_DEFAULT_SHELL=0
 
 usage() {
   cat <<'USAGE'
@@ -19,7 +14,6 @@ Usage: ./install.sh [options]
   -h, --help                          Show this help
 USAGE
 }
-
 while (($#)); do
   case "$1" in
     --profile) PROFILE="${2:?Missing profile}"; shift 2 ;;
@@ -33,17 +27,12 @@ while (($#)); do
 done
 case "$PROFILE" in desktop|development|all) ;; *) echo "Invalid profile: $PROFILE" >&2; exit 2 ;; esac
 
-if [[ ! -r /etc/os-release ]]; then
-  echo "Cannot identify operating system (/etc/os-release missing)." >&2
-  exit 1
-fi
+[[ -r /etc/os-release ]] || { echo "Cannot identify operating system (/etc/os-release missing)." >&2; exit 1; }
 # shellcheck disable=SC1091
 . /etc/os-release
-if [[ "${ID:-}" != ubuntu || "${VERSION_ID:-}" != 24.04 ]]; then
-  echo "This bootstrap targets Ubuntu 24.04 LTS; detected ${PRETTY_NAME:-unknown}." >&2
-  exit 1
-fi
-
+[[ "${ID:-}" == ubuntu && "${VERSION_ID:-}" == 24.04 ]] || {
+  echo "This bootstrap targets Ubuntu 24.04 LTS; detected ${PRETTY_NAME:-unknown}." >&2; exit 1;
+}
 if ((INSTALL_PACKAGES)); then
   command -v apt-get >/dev/null || { echo "apt-get is required." >&2; exit 1; }
   command -v sudo >/dev/null || { echo "sudo is required for package installation." >&2; exit 1; }
@@ -55,6 +44,11 @@ case "$PROFILE" in
   development) manifests+=("$ROOT/packages/development.apt") ;;
   all) manifests+=("$ROOT/packages/desktop.apt" "$ROOT/packages/development.apt") ;;
 esac
+case "$PROFILE" in
+  desktop) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi) ;;
+  development) stow_packages=(zsh neovim btop) ;;
+  all) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi neovim btop) ;;
+esac
 
 if ((DRY_RUN)); then
   echo "[dry-run] Ubuntu check passed: ${PRETTY_NAME}"
@@ -64,14 +58,10 @@ if ((DRY_RUN)); then
       sed -E '/^[[:space:]]*(#|$)/d' "$manifest" | sed 's/^/  /'
     done
   fi
-  case "$PROFILE" in
-    desktop) echo "[dry-run] Stow packages: sway waybar rofi foot mako zsh local-bin kanshi" ;;
-    development) echo "[dry-run] Stow packages: zsh local-bin neovim btop" ;;
-    all) echo "[dry-run] Stow packages: sway waybar rofi foot mako zsh local-bin kanshi neovim btop" ;;
-  esac
+  printf '[dry-run] Stow packages: %s\n' "${stow_packages[*]}"
   ((INSTALL_OMZ)) && echo "[dry-run] Clone Oh My Zsh if absent: ~/.local/share/oh-my-zsh"
-  ((SET_DEFAULT_SHELL)) && echo "[dry-run] Set login shell to $(command -v zsh || echo /usr/bin/zsh)"
-  [[ "$PROFILE" == development || "$PROFILE" == all ]] && echo "[dry-run] Install upstream Neovim Snap if no Neovim is already installed"
+  if ((SET_DEFAULT_SHELL)); then echo "[dry-run] Change passwd login shell to Zsh (if different)"; fi
+  [[ "$PROFILE" == development || "$PROFILE" == all ]] && echo "[dry-run] Install upstream Neovim Snap if absent; reject an existing version older than 0.11.2"
   exit 0
 fi
 
@@ -82,7 +72,6 @@ install_manifest() {
   echo "Installing packages from $(basename "$manifest")..."
   sudo apt-get install -y --no-install-recommends "${packages[@]}"
 }
-
 if ((INSTALL_PACKAGES)); then
   sudo apt-get update
   for manifest in "${manifests[@]}"; do install_manifest "$manifest"; done
@@ -91,14 +80,9 @@ fi
 if ((INSTALL_OMZ)); then "$ROOT/scripts/install-oh-my-zsh.sh"; fi
 if ((SET_DEFAULT_SHELL)); then
   zsh_path="$(command -v zsh)" || { echo "zsh is not installed; cannot change the login shell." >&2; exit 1; }
-  if [[ "${SHELL:-}" != "$zsh_path" ]]; then chsh -s "$zsh_path"; else echo "Zsh is already the login shell."; fi
+  passwd_shell="$(getent passwd "${USER:-$(id -un)}" | cut -d: -f7)"
+  if [[ "$passwd_shell" != "$zsh_path" ]]; then chsh -s "$zsh_path"; else echo "Zsh is already the login shell."; fi
 fi
-
-case "$PROFILE" in
-  desktop) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi) ;;
-  development) stow_packages=(zsh local-bin neovim btop) ;;
-  all) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi neovim btop) ;;
-esac
 
 if [[ "$PROFILE" == development || "$PROFILE" == all ]]; then
   if ((INSTALL_PACKAGES)); then "$ROOT/scripts/install-neovim.sh"; fi
@@ -109,5 +93,5 @@ echo
 echo "Bootstrap completed. No display-manager or system-session defaults were changed."
 if [[ "$PROFILE" == desktop || "$PROFILE" == all ]]; then
   echo "Log out and choose Sway from GDM's session menu."
-  echo "Run ./scripts/verify.sh after logging into Sway."
+  echo "Run ./scripts/verify.sh --profile desktop after logging into Sway."
 fi

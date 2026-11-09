@@ -1,5 +1,5 @@
 * {
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: "JetBrains Mono", "Fira Code", "FontAwesome", monospace;
   font-size: 12px;
   min-height: 0;
 }
@@ -24,3 +24,5 @@ window#waybar {
 #battery.critical { color: #f38ba8; }
 #network.disconnected, #pulseaudio.muted { color: #6c7086; }
 #custom-clipboard { color: #89b4fa; }
+
+#custom-recording { color: #f38ba8; font-weight: bold; }
