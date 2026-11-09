@@ -1,0 +1,26 @@
+* {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+  min-height: 0;
+}
+window#waybar {
+  background: rgba(30, 30, 46, 0.94);
+  color: #cdd6f4;
+  border-right: 1px solid #313244;
+}
+.modules-left, .modules-center, .modules-right { padding: 5px 0; }
+#workspaces button {
+  color: #a6adc8;
+  padding: 5px 0;
+  margin: 2px 5px;
+  border-radius: 6px;
+  background: transparent;
+}
+#workspaces button.focused { color: #1e1e2e; background: #89b4fa; }
+#workspaces button.urgent { color: #1e1e2e; background: #f38ba8; }
+#mode, #clock, #battery, #network, #pulseaudio, #idle_inhibitor,
+#custom-clipboard, #tray { padding: 7px 0; margin: 1px 0; }
+#battery.warning { color: #fab387; }
+#battery.critical { color: #f38ba8; }
+#network.disconnected, #pulseaudio.muted { color: #6c7086; }
+#custom-clipboard { color: #89b4fa; }

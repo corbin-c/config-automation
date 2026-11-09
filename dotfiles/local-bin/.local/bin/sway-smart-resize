@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Smart grow/shrink for sway: picks grow vs shrink from layout geometry."""
+import json, subprocess, sys
+
+EPS = 2  # px tolerance
+OPPOSITE = {"up": "down", "down": "up", "left": "right", "right": "left"}
+
+
+def tree():
+    return json.loads(subprocess.check_output(["swaymsg", "-t", "get_tree"]))
+
+
+def find_focused(node, ancestors):
+    if node.get("focused") and node.get("type") in ("con", "floating_con"):
+        return node, ancestors
+    for c in node.get("nodes", []) + node.get("floating_nodes", []):
+        r = find_focused(c, ancestors + [node])
+        if r:
+            return r
+    return None
+
+
+def collect_leaves(node, out):
+    if node.get("type") == "con" and not node.get("nodes") and not node.get("floating_nodes"):
+        out.append(node)
+    for c in node.get("nodes", []):
+        collect_leaves(c, out)
+
+
+def v_overlap(a, b):
+    return a["y"] < b["y"] + b["height"] - EPS and b["y"] < a["y"] + a["height"] - EPS
+
+
+def h_overlap(a, b):
+    return a["x"] < b["x"] + b["width"] - EPS and b["x"] < a["x"] + a["width"] - EPS
+
+
+def is_neighbor(f, c, d):
+    if d == "right":
+        return c["x"] >= f["x"] + f["width"] - EPS and v_overlap(f, c)
+    if d == "left":
+        return c["x"] + c["width"] <= f["x"] + EPS and v_overlap(f, c)
+    if d == "down":
+        return c["y"] >= f["y"] + f["height"] - EPS and h_overlap(f, c)
+    if d == "up":
+        return c["y"] + c["height"] <= f["y"] + EPS and h_overlap(f, c)
+    return False
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in OPPOSITE:
+        sys.exit("usage: sway-smart-resize up|down|left|right")
+    d = sys.argv[1]
+    found = find_focused(tree(), [])
+    if not found:
+        return
+    focused, ancestors = found
+
+    if focused.get("type") == "floating_con" or any(a.get("type") == "floating_con" for a in ancestors):
+        subprocess.run(["swaymsg", "resize", "grow", d])  # floating: plain resize
+        return
+
+    ws = next((a for a in ancestors if a.get("type") == "workspace"), None)
+    if ws is None:
+        return
+    leaves = []
+    collect_leaves(ws, leaves)
+    fr = focused["rect"]
+    if any(l is not focused and is_neighbor(fr, l["rect"], d) for l in leaves):
+        subprocess.run(["swaymsg", "resize", "grow", d])  # neighbor that way -> grow
+    else:
+        subprocess.run(["swaymsg", "resize", "shrink", OPPOSITE[d]])  # against edge -> shrink
+
+
+if __name__ == "__main__":
+    main()

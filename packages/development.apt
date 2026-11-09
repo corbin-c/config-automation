@@ -1,0 +1,11 @@
+# Optional development profile.
+btop
+git
+ripgrep
+fzf
+build-essential
+curl
+unzip
+python3-venv
+stow
+zsh

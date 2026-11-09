@@ -1,0 +1,168 @@
+# Personal Sway configuration for Ubuntu 24.04.
+# Deliberately independent of /etc/sway and /usr/share/sway configuration snippets.
+
+set $mod Mod4
+set $term foot
+set $menu rofi -show drun
+set $browser firefox
+set $file_manager nautilus
+set $locker swaylock --config $HOME/.config/swaylock/config --daemonize --show-failed-attempts --clock
+
+font pango:JetBrains Mono 10
+
+# French AZERTY keyboard layout; applies to keyboards without device-specific overrides.
+input type:keyboard {
+    xkb_layout fr
+    xkb_variant oss
+}
+
+# General behavior
+focus_follows_mouse no
+mouse_warping container
+workspace_auto_back_and_forth yes
+default_border pixel 2
+default_floating_border pixel 2
+smart_gaps on
+gaps inner 5
+gaps outer 2
+
+# Catppuccin Mocha window colors.
+client.focused          #89b4fa #1e1e2e #cdd6f4 #89b4fa #89b4fa
+client.focused_inactive #45475a #1e1e2e #bac2de #45475a #45475a
+client.unfocused        #313244 #1e1e2e #a6adc8 #313244 #313244
+client.urgent           #f38ba8 #1e1e2e #1e1e2e #f38ba8 #f38ba8
+
+# Ubuntu/GNOME provides the session bus, PolicyKit daemon and portal services.
+# This only imports the live compositor environment into the existing user bus.
+exec_always sh -lc 'systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP; dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP'
+
+# Ubuntu's packaged GNOME PolicyKit authentication agent (no custom agent/service).
+exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+
+# Session applications. `exec` avoids respawning these on config reload.
+exec waybar
+exec mako
+exec nm-applet --indicator
+exec swayidle -w timeout 600 'swaylock --config $HOME/.config/swaylock/config --show-failed-attempts --clock' before-sleep 'swaylock --config $HOME/.config/swaylock/config --show-failed-attempts --clock'
+exec sh -lc 'command -v cliphist >/dev/null && command -v wl-paste >/dev/null && wl-paste --type text --watch cliphist store'
+exec sh -lc 'command -v kanshi >/dev/null && [ -s "$HOME/.config/kanshi/config" ] && kanshi'
+
+# Wallpaper: set a user-owned image path in ~/.config/sway/config.d/wallpaper.conf if desired.
+include $HOME/.config/sway/config.d/*.conf
+
+# Launchers and windows
+bindsym $mod+Return exec $term
+bindsym $mod+Shift+Return exec $term --app-id floating_terminal
+bindsym $mod+d exec $menu
+bindsym $mod+o exec $HOME/.local/bin/rofi-spotlight
+bindsym $mod+f exec $file_manager
+bindsym $mod+w exec $browser
+bindsym $mod+g exec $term -e nvim
+bindsym Alt+F4 kill
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaymsg exit
+bindsym $mod+Shift+q exec $locker
+
+# Vim-like focus and container movement.
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Resize mode
+mode "resize" {
+    bindsym h resize shrink width 10 px
+    bindsym j resize grow height 10 px
+    bindsym k resize shrink height 10 px
+    bindsym l resize grow width 10 px
+    bindsym Left resize shrink width 10 px
+    bindsym Down resize grow height 10 px
+    bindsym Up resize shrink height 10 px
+    bindsym Right resize grow width 10 px
+    bindsym plus gaps inner current plus 2 px
+    bindsym minus gaps inner current minus 2 px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+r mode "resize"
+bindsym Control+$mod+Up exec $HOME/.local/bin/sway-smart-resize up
+bindsym Control+$mod+Down exec $HOME/.local/bin/sway-smart-resize down
+bindsym Control+$mod+Left exec $HOME/.local/bin/sway-smart-resize left
+bindsym Control+$mod+Right exec $HOME/.local/bin/sway-smart-resize right
+
+# Layouts and floating windows
+bindsym $mod+b splith
+bindsym $mod+v splitv
+bindsym $mod+s layout stacking
+bindsym $mod+e layout toggle split
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+bindsym F11 fullscreen
+
+# Workspaces. Keysyms match the French AZERTY number row.
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+set $ws10 "10"
+bindsym $mod+ampersand workspace $ws1
+bindsym $mod+eacute workspace $ws2
+bindsym $mod+quotedbl workspace $ws3
+bindsym $mod+apostrophe workspace $ws4
+bindsym $mod+parenleft workspace $ws5
+bindsym $mod+minus workspace $ws6
+bindsym $mod+egrave workspace $ws7
+bindsym $mod+underscore workspace $ws8
+bindsym $mod+ccedilla workspace $ws9
+bindsym $mod+agrave workspace $ws10
+bindsym $mod+Shift+ampersand move container to workspace $ws1
+bindsym $mod+Shift+eacute move container to workspace $ws2
+bindsym $mod+Shift+quotedbl move container to workspace $ws3
+bindsym $mod+Shift+apostrophe move container to workspace $ws4
+bindsym $mod+Shift+parenleft move container to workspace $ws5
+bindsym $mod+Shift+minus move container to workspace $ws6
+bindsym $mod+Shift+egrave move container to workspace $ws7
+bindsym $mod+Shift+underscore move container to workspace $ws8
+bindsym $mod+Shift+ccedilla move container to workspace $ws9
+bindsym $mod+Shift+agrave move container to workspace $ws10
+bindsym $mod+Tab workspace back_and_forth
+
+# Screenshot controls
+bindsym Print exec grim - | wl-copy
+bindsym $mod+Print exec grim -g "$(slurp)" - | wl-copy
+
+# Audio / media keys
+bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym --locked XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+bindsym --locked XF86AudioMicMute exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
+bindsym --locked XF86AudioPlay exec playerctl play-pause
+bindsym --locked XF86AudioNext exec playerctl next
+bindsym --locked XF86AudioPrev exec playerctl previous
+bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
+bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
+
+# Window rules: keep generic rules only; hardware/app-specific rules live in local.conf.
+for_window [title="Picture-in-Picture"] floating enable, sticky enable
+for_window [title="Picture in picture"] floating enable, sticky enable
+for_window [title="Save File"] floating enable
+for_window [app_id="pavucontrol"] floating enable
+for_window [app_id="org.gnome.Nautilus"] floating disable

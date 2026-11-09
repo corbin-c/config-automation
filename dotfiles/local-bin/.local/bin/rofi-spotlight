@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+HOME_DIR="$HOME"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}"
+INDEX_FILE="$CACHE_DIR/rofi-spotlight.index"
+mkdir -p "$CACHE_DIR"
+
+# Rebuild at most once per hour. Keep traversal scoped to HOME and prune caches/build trees.
+rebuild=1
+if [[ -s "$INDEX_FILE" ]]; then
+  now=$(date +%s)
+  mtime=$(stat -c %Y "$INDEX_FILE" 2>/dev/null || echo 0)
+  (( now - mtime < 3600 )) && rebuild=0
+fi
+if (( rebuild )); then
+  find "$HOME_DIR" \
+    \( -path "$HOME_DIR/.cache" -o -path "$HOME_DIR/.local/share/Trash" \
+       -o -path '*/.git' -o -path '*/node_modules' -o -path '*/.venv' \
+       -o -path '*/.direnv' -o -path '*/build' -o -path '*/dist' \) -prune \
+    -o -print 2>/dev/null | sort > "$INDEX_FILE"
+fi
+
+set +e
+selection="$(sed "s|^$HOME_DIR|~|" "$INDEX_FILE" | rofi -dmenu -i -p Open -matching fuzzy -kb-custom-1 Control-Return -kb-custom-2 Shift-Return)"
+status=$?
+set -e
+[[ -n "$selection" ]] || exit 0
+selection="${selection/#\~/$HOME_DIR}"
+case "$status" in
+  0) xdg-open "$selection" >/dev/null 2>&1 & ;;
+  10) foot -D "$(dirname "$selection")" >/dev/null 2>&1 & ;;
+  11) xdg-open "$(dirname "$selection")" >/dev/null 2>&1 & ;;
+  *) exit 0 ;;
+esac

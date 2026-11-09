@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if ! command -v cliphist >/dev/null || ! command -v wl-copy >/dev/null; then
+  notify-send "Clipboard history" "Install cliphist and wl-clipboard to use this menu."
+  exit 1
+fi
+selection="$(cliphist list | rofi -dmenu -i -p Clipboard)" || exit 0
+[[ -n "$selection" ]] || exit 0
+printf '%s\n' "$selection" | cliphist decode | wl-copy
