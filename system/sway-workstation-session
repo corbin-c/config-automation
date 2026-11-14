@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+export XCURSOR_THEME=breeze_cursors
+export XCURSOR_SIZE=24
+exec /usr/bin/sway "$@"

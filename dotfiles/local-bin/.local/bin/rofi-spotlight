@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SEARCH_DIR="$HOME"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}"
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/rofi-spotlight"
+INDEX_FILE="$CACHE_DIR/rofi-spotlight.index"
+DEFAULT_EXCLUDES=(".local" ".git" "node_modules" ".cache" ".npm" ".yarn" ".venv" ".direnv" "dist" "build" "target" ".local/share/Trash")
+
+mkdir -p "$CACHE_DIR" "$CONF_DIR"
+EXCLUDES=("${DEFAULT_EXCLUDES[@]}")
+if [[ -f "$CONF_DIR/excludes" ]]; then
+  while IFS= read -r line; do
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    EXCLUDES+=("$line")
+  done < "$CONF_DIR/excludes"
+fi
+
+needs_rebuild=1
+if [[ -s "$INDEX_FILE" ]]; then
+  now=$(date +%s)
+  mtime=$(stat -c %Y "$INDEX_FILE" 2>/dev/null || echo 0)
+  age=$((now - mtime))
+  (( age < 3600 )) && needs_rebuild=0
+fi
+
+if (( needs_rebuild )); then
+  finder="$(command -v fd || command -v fdfind || true)"
+  if [[ -n "$finder" ]]; then
+    exclude_args=()
+    for pattern in "${EXCLUDES[@]}"; do
+      exclude_args+=(--exclude "$pattern")
+    done
+    "$finder" --follow "${exclude_args[@]}" -t f -t d . "$SEARCH_DIR" > "$INDEX_FILE"
+  else
+    # Portable fallback; use a generated find expression with safely quoted names.
+    prune=( -type d \( )
+    for pattern in "${EXCLUDES[@]}"; do
+      [[ ${#prune[@]} -gt 3 ]] && prune+=( -o )
+      prune+=( -name "$pattern" )
+    done
+    prune+=( \) -prune -o \( -type f -o -type d \) -print )
+    find "$SEARCH_DIR" "${prune[@]}" > "$INDEX_FILE"
+  fi
+fi
+
+selection_file="$(mktemp)"
+trap 'rm -f "$selection_file"' EXIT
+set +e
+sed "s|^$HOME|~|" "$INDEX_FILE" |
+  rofi -dmenu -i -p Open -matching normal -kb-custom-1 Control-Delete > "$selection_file"
+status=${PIPESTATUS[1]}
+set -e
+selection="$(cat "$selection_file")"
+[[ -n "$selection" ]] || exit 0
+selection="${selection/#\~/$HOME}"
+
+case "$status" in
+  0)
+    xdg-open "$selection" >/dev/null 2>&1 &
+    ;;
+  10)
+    # Custom action 1 intentionally left available for a future user action.
+    ;;
+  *)
+    exit 0
+    ;;
+esac

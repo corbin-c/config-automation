@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Sway (workstation)
+Comment=Sway session with the workstation cursor environment
+Exec=/usr/local/bin/sway-workstation-session
+TryExec=/usr/local/bin/sway-workstation-session
+Type=Application
+DesktopNames=sway;

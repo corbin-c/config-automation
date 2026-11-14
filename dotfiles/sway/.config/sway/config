@@ -4,12 +4,15 @@
 set $mod Mod4
 set $terminal gnome-terminal
 set $app_launcher rofi -show drun
-set $command_launcher rofi -show run
-set $window_switcher $HOME/.local/bin/sway-window-switcher
-set $clipboard_menu $HOME/.local/bin/clipboard-menu
-set $resize_helper $HOME/.local/bin/sway-smart-resize
+set $command_launcher rofi-spotlight
+set $window_switcher sway-window-switcher
+set $clipboard_menu clipboard-menu
+set $resize_helper sway-smart-resize
 
 font pango:JetBrains Mono 10
+
+# Match the cursor theme used in the original workstation configuration.
+seat seat0 xcursor_theme breeze_cursors 24
 
 # French AZERTY, matching the keyboard layout in the previous configuration.
 input type:keyboard {
@@ -25,7 +28,7 @@ input type:touchpad {
     tap enabled
 }
 
-# Dynamic, automatic tiling. Sway chooses split orientation from available space.
+# The autotiling IPC helper alternates split orientation as windows are opened.
 default_orientation auto
 focus_follows_mouse yes
 mouse_warping none
@@ -48,11 +51,14 @@ client.urgent           #f38ba8 #1e1e2e #1e1e2e #f38ba8 #f38ba8
 output * bg #1e1e2e solid_color
 
 # Make the Wayland session environment available to D-Bus/systemd user services.
-exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
-exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XCURSOR_THEME XCURSOR_SIZE
+exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP XCURSOR_THEME XCURSOR_SIZE
 
 # Ubuntu's PolicyKit agent, not a custom service.
 exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+
+# Proper IPC-driven autotiling; default_orientation alone does not provide this behavior.
+exec autotiling
 
 # Session utilities. `exec` avoids duplicate processes when the config is reloaded.
 exec waybar
@@ -80,6 +86,30 @@ bindsym Alt+F4 kill
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
 bindsym F11 fullscreen
+
+# Session exit menu, restored from the original workstation configuration.
+# Super+Delete opens the mode; Escape returns to normal mode.
+set $mode_exit "<span foreground='#f38ba8'><b>Power</b></span>  <span foreground='#cdd6f4'>(l) lock  (e) logout  (u) suspend  (r) reboot  (s) shutdown</span>"
+mode --pango_markup $mode_exit {
+    bindsym l mode "default", exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
+    bindsym e exec swaymsg exit
+    bindsym u mode "default", exec systemctl suspend
+    bindsym r exec systemctl reboot
+    bindsym s exec systemctl poweroff
+    bindsym Escape mode "default"
+}
+bindsym $mod+Delete mode $mode_exit
+
+# Recording mode, restored from the original configuration:
+# r = screen only; Shift+r = screen plus audio; Escape cancels.
+set $mode_recording "<span foreground='#a6e3a1'><b>Record</b></span>  <span foreground='#cdd6f4'>(r) screen only  (Shift+r) screen + audio</span>"
+mode --pango_markup $mode_recording {
+    bindsym r exec record-screen, mode "default"
+    bindsym Shift+r exec record-screen --audio, mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+Shift+r mode $mode_recording
+bindsym $mod+Escape exec pkill -U $USER -INT -x wf-recorder
 
 # Directional focus and movement.
 bindsym $mod+Left focus left

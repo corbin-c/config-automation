@@ -23,5 +23,12 @@ pavucontrol
 pulseaudio-utils
 fonts-jetbrains-mono
 fonts-font-awesome
+breeze-cursor-theme
+wf-recorder
 python3
+python3-venv
+pipx
 libnotify-bin
+fd-find
+jq
+xdg-user-dirs

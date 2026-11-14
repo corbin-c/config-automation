@@ -1,28 +1,59 @@
+@import "colors.css";
+
 * {
-  font-family: "JetBrains Mono", "FontAwesome", monospace;
-  font-size: 11px;
+  font-family: "JetBrains Mono", "FontAwesome", sans-serif;
+  font-size: 12px;
   min-height: 0;
 }
+
 window#waybar {
-  background: rgba(30, 30, 46, 0.96);
-  color: #cdd6f4;
-  border-right: 1px solid #313244;
-}
-.modules-left, .modules-center, .modules-right { padding: 3px 0; }
-#workspaces button {
-  color: #a6adc8;
-  padding: 4px 0;
-  margin: 1px 3px;
-  border-radius: 4px;
   background: transparent;
+  color: @theme_text_color;
+  font-size: 12px;
 }
-#workspaces button.focused { color: #1e1e2e; background: #89b4fa; }
-#workspaces button.urgent { color: #1e1e2e; background: #f38ba8; }
-#custom-clipboard, #battery, #network, #pulseaudio, #clock, #tray {
-  padding: 5px 0;
-  margin: 1px 0;
+
+.modules-left,
+.modules-center,
+.modules-right {
+  padding: 0;
+  margin: 0;
 }
-#battery.warning { color: #fab387; }
+
+#workspaces,
+#workspaces button,
+#custom-wf-recorder,
+#custom-clipboard,
+#battery,
+#network,
+#idle_inhibitor,
+#pulseaudio,
+#tray,
+#mode {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+#workspaces button {
+  min-width: 12px;
+  color: @theme_text_color;
+  background: transparent;
+  border-radius: 0;
+}
+
+#workspaces button.focused {
+  color: @theme_base_color;
+  background: @theme_selected_bg_color;
+}
+
+#workspaces button.urgent {
+  color: @theme_base_color;
+  background: @warning_color;
+}
+
+#custom-clipboard { color: @theme_selected_bg_color; }
+#custom-wf-recorder.recording { color: @warning_color; }
+#battery.warning { color: @warning_color; }
 #battery.critical { color: #f38ba8; }
-#network.disconnected, #pulseaudio.muted { color: #6c7086; }
-#custom-clipboard { color: #89b4fa; }
+#network.disconnected,
+#pulseaudio.muted { color: #6c7086; }

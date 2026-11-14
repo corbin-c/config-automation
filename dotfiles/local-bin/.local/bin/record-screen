@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "Usage: record-screen [--audio]" >&2
+}
+
+record_audio=0
+case "${1:-}" in
+  "") ;;
+  --audio) record_audio=1 ;;
+  -h|--help) usage; exit 0 ;;
+  *) usage; exit 2 ;;
+esac
+
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -t 2000 "Screen recording" "$1"
+  fi
+}
+
+# Match the original recorder.sh toggle behavior: invoking it while a capture
+# is active sends SIGINT so wf-recorder finalizes the video container cleanly.
+if pgrep -x wf-recorder >/dev/null 2>&1; then
+  pkill -U "$UID" -INT -x wf-recorder
+  exit 0
+fi
+
+for dependency in swaymsg jq slurp wf-recorder; do
+  if ! command -v "$dependency" >/dev/null 2>&1; then
+    notify "Cannot record: '$dependency' is not installed."
+    exit 1
+  fi
+done
+
+video_dir="$(xdg-user-dir VIDEOS 2>/dev/null || true)"
+if [[ -z "$video_dir" || "$video_dir" == "$HOME" ]]; then
+  video_dir="$HOME/Videos"
+fi
+mkdir -p "$video_dir"
+timestamp="recording_$(date +%Y%m%d-%H%M%S)"
+
+notify "Select a region to record."
+# Feed visible toplevel window rectangles to slurp, as the original helper did.
+if ! area="$(swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp)"; then
+  notify "Recording cancelled."
+  exit 0
+fi
+if [[ -z "$area" ]]; then
+  notify "Recording cancelled."
+  exit 0
+fi
+
+notify "Recording in 3 seconds."
+sleep 1
+notify "Recording in 2 seconds."
+sleep 1
+notify "Recording in 1 second."
+sleep 1
+
+if ((record_audio)); then
+  output="$video_dir/$timestamp.mp4"
+  notify "Recording region with audio. Super+Escape stops recording."
+  wf-recorder --audio -g "$area" -f "$output"
+else
+  output="$video_dir/$timestamp.webm"
+  notify "Recording region without audio. Super+Escape stops recording."
+  wf-recorder -g "$area" -c libvpx \
+    -p qmin=0 -p qmax=25 -p crf=4 -p b:v=1M \
+    -f "$output"
+fi
+
+notify "Recording saved: $output"

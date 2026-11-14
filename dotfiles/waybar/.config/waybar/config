@@ -1,11 +1,12 @@
 {
   "layer": "top",
   "position": "left",
-  "width": 30,
-  "spacing": 2,
+  "width": 12,
+  "margin": 0,
   "modules-left": ["sway/workspaces"],
-  "modules-center": ["custom/clipboard"],
-  "modules-right": ["battery", "network", "pulseaudio", "clock", "tray"],
+  "modules-center": ["custom/wf-recorder", "sway/mode"],
+  "modules-right": ["custom/clipboard", "battery", "network", "idle_inhibitor", "pulseaudio", "tray"],
+
   "sway/workspaces": {
     "disable-scroll": true,
     "format": "{index}",
@@ -13,43 +14,62 @@
   },
   "battery": {
     "interval": 30,
-    "states": {"warning": 20, "critical": 8},
-    "format": "{icon}",
+    "states": {"warning": 15, "critical": 5},
     "format-charging": "",
+    "format": "{icon}",
     "format-icons": ["", "", "", "", ""],
+    "tooltip": true,
     "tooltip-format": "{capacity}%"
   },
   "network": {
     "interval": 5,
     "format-wifi": "",
-    "format-ethernet": "ETH",
-    "format-disconnected": "×",
-    "tooltip-format": "{ifname}: {ipaddr}",
+    "format-ethernet": "",
+    "format-disconnected": "",
+    "tooltip-format": "{ifname} ({essid}): {ipaddr}",
     "on-click": "nm-connection-editor"
+  },
+  "sway/mode": {
+    "format": "<span style=\"italic\">{}</span>",
+    "tooltip": false
+  },
+  "idle_inhibitor": {
+    "format": "{icon}",
+    "format-icons": {"activated": "", "deactivated": ""},
+    "tooltip": true
   },
   "pulseaudio": {
     "scroll-step": 5,
     "format": "{icon}",
     "format-muted": "",
-    "format-icons": {"headphone": "", "hands-free": "", "headset": "", "default": ["", "", ""]},
-    "tooltip-format": "{volume}%",
+    "format-source": "",
+    "format-source-muted": "",
+    "format-icons": {
+      "headphone": "",
+      "headset": "",
+      "default": ["", "", ""]
+    },
+    "tooltip-format": "{icon} {volume}% {format_source}",
     "on-click": "pavucontrol",
     "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
     "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -5%"
   },
-  "clock": {
-    "interval": 30,
-    "format": "",
-    "tooltip": true,
-    "tooltip-format": "{:%A %d %B %Y}\n{:%H:%M:%S}"
-  },
-  "tray": {"icon-size": 16, "spacing": 4},
+  "tray": {"icon-size": 21, "spacing": 5},
   "custom/clipboard": {
     "format": "",
-    "tooltip": true,
-    "exec": "cliphist list | wc -l",
     "interval": 30,
-    "on-click": "$HOME/.local/bin/clipboard-menu",
+    "exec": "cliphist list | wc -l",
+    "tooltip": true,
+    "on-click": "clipboard-menu",
     "on-click-right": "cliphist wipe"
+  },
+  "custom/wf-recorder": {
+    "interval": 1,
+    "return-type": "json",
+    "format": "{text}",
+    "tooltip": true,
+    "exec": "printf '{\"class\":\"recording\",\"text\":\"\",\"tooltip\":\"Recording: Super+Shift+R, then r (silent) or Shift+r (with audio); Super+Escape stops\"}'",
+    "exec-if": "pgrep -x wf-recorder",
+    "on-click": "pkill -INT -x wf-recorder"
   }
 }

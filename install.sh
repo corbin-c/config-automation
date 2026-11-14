@@ -11,12 +11,14 @@ Ubuntu Sway session bootstrap
 
 Usage: ./install.sh [options]
   --dry-run             Show planned package and file operations; change nothing
-  --no-packages         Skip APT and Flashfocus installation
+  --no-packages         Skip APT and pipx installs; dependencies must already exist
   --without-flashfocus  Do not install Flashfocus (focus-following still works)
   -h, --help            Show this help
 
-This installs a separate Sway session. It does not remove GNOME, change GDM,
-change the default session, alter GNOME settings, or replace Neovim.
+This installs a separate Sway session. It does not remove GNOME, change GDM's
+selected default, alter GNOME settings, or replace Neovim. It adds one additional
+GDM session entry named "Sway (workstation)" so Sway can start with a consistent
+Breeze cursor environment.
 USAGE
 }
 while (($#)); do
@@ -31,7 +33,7 @@ while (($#)); do
 done
 
 if [[ "$EUID" -eq 0 ]]; then
-  echo "Run this installer as your normal desktop user, not as root; it invokes sudo only for APT." >&2
+  echo "Run this installer as your normal desktop user, not as root; it invokes sudo only for APT and the GDM session entry." >&2
   exit 1
 fi
 if [[ ! -r /etc/os-release ]]; then echo "Cannot identify operating system." >&2; exit 1; fi
@@ -46,27 +48,34 @@ mapfile -t packages < <(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/packages/desktop.ap
 if ((DRY_RUN)); then
   printf 'Target: %s\n' "$PRETTY_NAME"
   printf 'APT packages:\n'; printf '  %s\n' "${packages[@]}"
+  printf 'Autotiling: pipx install autotiling==1.9.3\n'
   if ((WITH_FLASHFOCUS)); then
     printf 'Flashfocus: pipx install flashfocus==2.9.0 (with native build dependencies)\n'
   else
     printf 'Flashfocus: skipped\n'
   fi
+  printf 'GDM: add /usr/local/share/wayland-sessions/sway-workstation.desktop and /usr/local/bin/sway-workstation-session\n'
   printf 'Dotfiles: link files from %s into $HOME, backing up exact conflicts.\n' "$ROOT/dotfiles"
   printf 'No changes will be made.\n'
   exit 0
 fi
 
+SUDO=(sudo)
 if (( ! NO_PACKAGES )); then
-  SUDO=()
-  if [[ "$EUID" -ne 0 ]]; then
-    command -v sudo >/dev/null 2>&1 || { echo "sudo is required to install APT packages." >&2; exit 1; }
-    SUDO=(sudo)
-  fi
+  command -v sudo >/dev/null 2>&1 || { echo "sudo is required to install APT packages." >&2; exit 1; }
   "${SUDO[@]}" apt-get update
   "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
 
+  # autotiling is not packaged in Ubuntu 24.04 Noble. Install the upstream
+  # release in its own pipx environment; pin it for reproducibility.
+  if [[ -x "$HOME/.local/bin/autotiling" ]] && "$HOME/.local/bin/autotiling" --version 2>&1 | grep -q 'autotiling 1.9.3'; then
+    echo "autotiling 1.9.3 is already installed with pipx."
+  else
+    pipx install --force --python python3 'autotiling==1.9.3'
+  fi
+
   if ((WITH_FLASHFOCUS)); then
-    flashfocus_packages=(pipx libxcb-render0-dev libffi-dev python3-dev python3-cffi)
+    flashfocus_packages=(libxcb-render0-dev libffi-dev python3-dev python3-cffi)
     "${SUDO[@]}" apt-get install -y --no-install-recommends "${flashfocus_packages[@]}"
     pipx_packages="$(pipx list 2>/dev/null || true)"
     if grep -Fq 'package flashfocus 2.9.0,' <<<"$pipx_packages"; then
@@ -82,8 +91,13 @@ if (( ! NO_PACKAGES )); then
       pipx install --force --python python3 'flashfocus==2.9.0'
     fi
   fi
+
+  # Add a separate GDM entry. The packaged Sway session and GNOME session are
+  # left untouched; the wrapper sets cursor variables only for this session.
+  "${SUDO[@]}" install -D -m 0755 "$ROOT/system/sway-workstation-session" /usr/local/bin/sway-workstation-session
+  "${SUDO[@]}" install -D -m 0644 "$ROOT/system/sway-workstation.desktop" /usr/local/share/wayland-sessions/sway-workstation.desktop
 else
-  echo "Skipping package installation (--no-packages)."
+  echo "Skipping APT and pipx installation (--no-packages). The Sway (workstation) GDM entry is not installed in this mode."
 fi
 
 "$ROOT/scripts/deploy.sh"
@@ -93,9 +107,9 @@ Installation files deployed.
 
 Next steps:
   1. Log out.
-  2. At GDM, select your user, open the session chooser, and choose Sway.
+  2. At GDM, choose "Sway (workstation)" from the session chooser.
   3. Log in. GNOME remains available from the same chooser.
 
-Do not change GDM or the default session. If Sway does not start, choose GNOME
-again at GDM; the installer has not changed the GNOME session.
+The standard Ubuntu Sway session is not modified. GNOME, GDM's default session,
+GNOME settings, and Neovim are not modified.
 DONE
