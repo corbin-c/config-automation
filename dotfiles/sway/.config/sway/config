@@ -4,9 +4,9 @@
 set $mod Mod4
 set $terminal gnome-terminal
 set $app_launcher rofi -show drun
-set $command_launcher rofi-spotlight
-set $window_switcher sway-window-switcher
-set $clipboard_menu clipboard-menu
+set $command_launcher $HOME/.local/bin/rofi-spotlight
+set $window_switcher $HOME/.local/bin/sway-window-switcher
+set $clipboard_menu $HOME/.local/bin/clipboard-menu
 set $resize_helper sway-smart-resize
 
 font pango:JetBrains Mono 10
@@ -28,7 +28,9 @@ input type:touchpad {
     tap enabled
 }
 
-# The autotiling IPC helper alternates split orientation as windows are opened.
+# Autotiling selects horizontal/vertical split orientation from the focused
+# container's aspect ratio. Use the absolute pipx launcher path: GDM-launched
+# Sway does not necessarily inherit ~/.local/bin in PATH.
 default_orientation auto
 focus_follows_mouse yes
 mouse_warping none
@@ -58,7 +60,7 @@ exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSO
 exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
 
 # Proper IPC-driven autotiling; default_orientation alone does not provide this behavior.
-exec autotiling
+exec $HOME/.local/bin/start-autotiling
 
 # Session utilities. `exec` avoids duplicate processes when the config is reloaded.
 exec waybar
@@ -77,15 +79,25 @@ exec sh -lc 'if [ -x "$HOME/.local/bin/flashfocus" ]; then exec "$HOME/.local/bi
 include $HOME/.config/sway/config.d/*.conf
 
 # Applications and launchers.
+bindsym $mod+t exec $terminal
 bindsym $mod+Return exec $terminal
+bindsym $mod+w exec firefox
+bindsym $mod+f exec thunar
+bindsym $mod+g exec gnome-terminal -- nvim
 bindsym $mod+d exec $app_launcher
 bindsym $mod+space exec $command_launcher
 bindsym $mod+Tab exec $window_switcher
 bindsym $mod+v exec $clipboard_menu
 bindsym Alt+F4 kill
 bindsym $mod+Shift+c reload
+bindsym Control+Shift+BackSpace reload
+bindsym Alt+Space exec $window_switcher
 bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
 bindsym F11 fullscreen
+bindsym $mod+exclam layout tabbed
+bindsym $mod+colon layout toggle split
+bindsym $mod+Shift+F11 floating toggle
+bindsym $mod+F12 focus parent
 
 # Session exit menu, restored from the original workstation configuration.
 # Super+Delete opens the mode; Escape returns to normal mode.

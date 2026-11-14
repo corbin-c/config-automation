@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+AUTOTILING="$HOME/.local/bin/autotiling"
+LOG_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/sway-workstation"
+LOG_FILE="$LOG_DIR/autotiling.log"
+mkdir -p "$LOG_DIR"
+if [[ ! -x "$AUTOTILING" ]]; then
+  printf 'autotiling launcher missing or not executable: %s\n' "$AUTOTILING" >> "$LOG_FILE"
+  exit 127
+fi
+exec "$AUTOTILING" --debug >> "$LOG_FILE" 2>&1

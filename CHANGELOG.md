@@ -26,3 +26,13 @@
 - Added a custom Rofi window picker backed by Sway IPC so native Wayland windows are included.
 - Added Cliphist listeners for text and images plus MIME-aware clipboard restoration.
 - Removed Foot, Neovim, Zsh, Oh My Zsh, development profile and unrelated personal utilities from the installer.
+
+
+## 0.1.3
+
+- Restored the original Rofi `config.rasi` and `Manjaro.rasi` files from the supplied workstation archive and explicitly loads the Manjaro palette.
+- Restored Super+T, Super+Enter, Super+W, Super+F, and Super+G application bindings. Added Thunar to the installed package set.
+- Fixed launcher resolution by using absolute paths for the user-local Spotlight, window-switcher, and clipboard scripts; added Alt+Space as an alternate window-picker binding.
+- Fixed autotiling startup to invoke the pipx executable at `~/.local/bin/autotiling` explicitly and capture diagnostics in `~/.local/state/sway-workstation/autotiling.log`.
+- Restored additional non-conflicting layout bindings from the original configuration.
+- Added a startup wrapper that creates the diagnostic directory before launching autotiling, preventing log redirection from blocking startup when the directory does not yet exist.

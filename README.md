@@ -10,13 +10,13 @@ This repository adds a separate Sway login session. It does not replace GNOME or
 Included:
 
 - Ubuntu-packaged Sway, Waybar, Rofi, Mako, Swaylock and Swayidle.
-- Upstream `autotiling` 1.9.3, installed in an isolated `pipx` environment. `default_orientation auto` alone is not autotiling.
-- The user's original Rofi theme (`config.rasi`), including the original Arc-dark palette and layout. The font is set to the Ubuntu-packaged JetBrains Mono rather than an uninstalled Nerd Font.
+- Upstream `autotiling` 1.9.3, installed in an isolated `pipx` environment and launched by its absolute path. It chooses split orientation from the focused container dimensions; it is not a fixed alternating-orientation algorithm.
+- The user's original Rofi `config.rasi` and `Manjaro.rasi` palette, loaded together so the original Catppuccin colours and layout are both applied.
 - The user's original narrow, 12px vertical Waybar layout and Catppuccin Mocha palette. The Manjaro-only Waybar template import was replaced with local CSS; sunset controls were removed as previously requested.
 - Focus follows mouse; Flashfocus 2.9.0 is installed in an isolated `pipx` environment by default.
 - Super + arrow focus; Super + Shift + arrow move; Super + Ctrl + arrow resize.
 - Ten numbered workspaces, using French AZERTY keysyms for the number row.
-- Rofi application launcher (Super+D), file search/Spotlight launcher (Super+Space), and a Sway IPC window picker (Super+Tab).
+- Rofi application launcher (Super+D), the original Spotlight file search (Super+Space), and a Sway IPC window picker (Super+Tab).
 - Cliphist text and image history (Super+V), with MIME-aware restoration.
 - Breeze cursor theme selected by Sway and passed to applications from the dedicated Sway session entry.
 - Generic French keyboard and touchpad configuration.
@@ -25,7 +25,7 @@ Included:
 
 Not included:
 
-- Foot or terminal configuration. Super+Enter temporarily opens the existing GNOME Terminal.
+- Foot or terminal configuration. Super+T and Super+Enter open the existing GNOME Terminal; Super+G opens GNOME Terminal running Neovim.
 - Neovim, Zsh, Oh My Zsh, development packages or shell changes.
 - Scratchpad, tabbed/stacking layout bindings, floating-window workflow, weather, time tracking, sunset controls, or personal application configuration.
 - Changes to GNOME settings, GDM's default session, the packaged Ubuntu Sway session, or `/etc` configuration.
@@ -46,7 +46,7 @@ Options:
 ./install.sh --no-packages         # deploy files only; dependencies must already exist
 ```
 
-The installer checks for Ubuntu 24.04. It installs APT packages from Ubuntu repositories using `--no-install-recommends`; this includes `breeze-cursor-theme`, `wf-recorder`, `fd-find`, `pipx` and the existing desktop dependencies. `autotiling` 1.9.3 and Flashfocus 2.9.0 are pinned PyPI applications installed into isolated pipx environments, not Ubuntu's system Python.
+The installer checks for Ubuntu 24.04. It installs APT packages from Ubuntu repositories using `--no-install-recommends`; this includes `breeze-cursor-theme`, `wf-recorder`, `fd-find`, `thunar`, `pipx` and the existing desktop dependencies. `autotiling` 1.9.3 and Flashfocus 2.9.0 are pinned PyPI applications installed into isolated pipx environments, not Ubuntu's system Python.
 
 The installer adds one session entry and wrapper:
 
@@ -65,10 +65,13 @@ GDM remains the display manager. GNOME remains installed and selectable. At the 
 
 | Shortcut | Action |
 |---|---|
-| Super+Enter | Existing GNOME Terminal |
+| Super+T / Super+Enter | Existing GNOME Terminal |
+| Super+G | GNOME Terminal running Neovim |
+| Super+W | Firefox |
+| Super+F | Thunar file manager |
 | Super+D | Rofi application launcher |
 | Super+Space | Rofi file search (Spotlight) |
-| Super+Tab | Sway-aware window picker |
+| Super+Tab / Alt+Space | Sway-aware window picker |
 | Super+V | Clipboard history |
 | Super+Arrows | Focus in direction |
 | Super+Shift+Arrows | Move focused window |
@@ -133,11 +136,11 @@ Static checks do not prove that Sway starts correctly on the target laptop. Befo
 
 1. Confirm Ubuntu/GNOME, the packaged Sway session, and Sway (workstation) appear in GDM.
 2. Open 3–5 windows and confirm split directions alternate as expected; try different window aspect ratios.
-3. Confirm Rofi uses the original left-anchored Arc-dark theme and Waybar is the original 12px vertical Catppuccin bar.
+3. Confirm Rofi loads the original left-anchored layout with the Manjaro Catppuccin palette and Waybar is the original 12px vertical Catppuccin bar.
 4. Test focus-follows-mouse and Flashfocus animation.
 5. Test directional focus, move and resize bindings.
 6. Test all ten workspaces with the French AZERTY keyboard.
-7. Test Rofi app, command and native Wayland window pickers.
+7. Test Super+D app launcher, Super+Space Spotlight search, and Super+Tab native Wayland window picker.
 8. Copy text and images, select each from cliphist, and verify paste MIME types.
 9. Check pointer shape in GTK, Qt, browser and XWayland applications.
 10. Test the exit menu (lock, logout, suspend, reboot, shutdown) and confirm Escape cancels it.
