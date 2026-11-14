@@ -1,6 +1,6 @@
 # Minimal Ubuntu Sway Session
 
-**Version:** 0.1.4  
+**Version:** 0.1.5  
 **Target:** Ubuntu 24.04 LTS (Noble), with the standard GNOME desktop and GDM installed.
 
 This repository adds a separate Sway login session. It does not replace GNOME or attempt to turn GNOME Shell into a tiling window manager.
@@ -11,12 +11,12 @@ Included:
 
 - Ubuntu-packaged Sway, Waybar, Rofi, Mako, Swaylock and Swayidle.
 - Upstream `autotiling` 1.9.3, installed in an isolated `pipx` environment and launched by its absolute path. It chooses split orientation from the focused container dimensions; it is not a fixed alternating-orientation algorithm.
-- The user's original Rofi layout and Manjaro palette, applied directly in `config.rasi` without a theme-loader directive (avoids Rofi parser errors).
+- The exact original Rofi `config.rasi` from the supplied dotfiles, restored byte-for-byte (including its original colors, font and left-anchored geometry). The separate original `Manjaro.rasi` and `Arc-dark.rasi` files are also preserved.
 - The user's original narrow, 12px vertical Waybar layout and Catppuccin Mocha palette. The Manjaro-only Waybar template import was replaced with local CSS; sunset controls were removed as previously requested.
 - Focus follows mouse; Flashfocus 2.9.0 is installed in an isolated `pipx` environment by default.
 - Super + arrow focus; Super + Shift + arrow move; Super + Ctrl + arrow resize.
 - Ten numbered workspaces, using French AZERTY keysyms for the number row.
-- Rofi application launcher (Super+D), the original Spotlight file search (Super+Space), and a Sway IPC window picker (Super+Tab), with invocation and error logging under `~/.local/state/sway-workstation/window-switcher.log`.
+- Rofi application launcher (Super+D), the original Spotlight file search (Super+Space), and a Sway IPC window picker (Super+Tab), with invocation and error logging under `~/.local/state/sway-workstation/window-switcher.log`. Rofi uses the exact original `config.rasi` palette and geometry from the supplied dotfiles; no Catppuccin color substitutions are applied to Rofi.
 - Cliphist text and image history (Super+V), with MIME-aware restoration.
 - Breeze cursor theme selected by Sway and passed to applications from the dedicated Sway session entry.
 - Generic French keyboard and touchpad configuration.
@@ -93,7 +93,7 @@ On the French AZERTY layout, the unshifted number row is represented by `&`, `é
 
 ## Clipboard history
 
-`wl-paste` listeners store text plus PNG, JPEG and WebP clipboard images in cliphist. They set `CLIPBOARD_TYPE` explicitly because Ubuntu 24.04's wl-clipboard 2.2.1 predates the newer MIME-type environment support used by current cliphist examples. The picker shows the preview while retaining the entry ID internally. When restoring an image, it reads the recorded MIME type and passes that to `wl-copy`, rather than mislabelling image bytes as plain text. The history is stored under `~/.cache/cliphist/`.
+`wl-paste` listeners store text plus PNG, JPEG and WebP clipboard images in cliphist. They set `CLIPBOARD_TYPE` explicitly because Ubuntu 24.04's wl-clipboard 2.2.1 predates the newer MIME-type environment support used by current cliphist examples. The picker shows only the preview while retaining the selected TSV row and entry ID for `cliphist decode`. When restoring an image, it reads the recorded MIME type and passes that to `wl-copy`, rather than mislabelling image bytes as plain text. The Waybar click action uses the script’s absolute home-directory path because GDM-launched Sway does not guarantee `~/.local/bin` is in `PATH`. Empty history and runtime errors produce notifications; diagnostics are written to `~/.local/state/sway-workstation/clipboard-menu.log`. The history is stored under `~/.cache/cliphist/`.
 
 ## Deployment and rollback
 
@@ -136,12 +136,12 @@ Static checks do not prove that Sway starts correctly on the target laptop. Befo
 
 1. Confirm Ubuntu/GNOME, the packaged Sway session, and Sway (workstation) appear in GDM.
 2. Open 3–5 windows and confirm split directions alternate as expected; try different window aspect ratios.
-3. Confirm Rofi loads the original left-anchored layout with the Manjaro Catppuccin palette and Waybar is the original 12px vertical Catppuccin bar.
+3. Confirm Rofi loads the exact original left-anchored layout and colors from your supplied `config.rasi`, and Waybar is the original 12px vertical bar.
 4. Test focus-follows-mouse and Flashfocus animation.
 5. Test directional focus, move and resize bindings.
 6. Test all ten workspaces with the French AZERTY keyboard.
 7. Test Super+D app launcher, Super+Space Spotlight search, and Super+Tab native Wayland window picker. If the picker does not appear, inspect `~/.local/state/sway-workstation/window-switcher.log`; it records invocation and Rofi/Sway IPC errors.
-8. Copy text and images, select each from cliphist, and verify paste MIME types.
+8. Copy text and images, open clipboard history by clicking the Waybar clipboard icon and with Super+V, select each item, and verify paste MIME types. If the icon action fails, inspect `~/.local/state/sway-workstation/clipboard-menu.log`.
 9. Check pointer shape in GTK, Qt, browser and XWayland applications.
 10. Test the exit menu (lock, logout, suspend, reboot, shutdown) and confirm Escape cancels it.
 11. Test recording mode: `r` selects a region and records WebM/VP8 without audio; Shift+`r` selects a region and records MP4 with audio; confirm the countdown, Escape cancellation, Super+Escape stop, output location and Waybar indicator.

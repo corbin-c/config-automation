@@ -3,10 +3,21 @@
   "position": "left",
   "width": 12,
   "margin": 0,
-  "modules-left": ["sway/workspaces"],
-  "modules-center": ["custom/wf-recorder", "sway/mode"],
-  "modules-right": ["custom/clipboard", "battery", "network", "idle_inhibitor", "pulseaudio", "tray"],
-
+  "modules-left": [
+    "sway/workspaces"
+  ],
+  "modules-center": [
+    "custom/wf-recorder",
+    "sway/mode"
+  ],
+  "modules-right": [
+    "custom/clipboard",
+    "battery",
+    "network",
+    "idle_inhibitor",
+    "pulseaudio",
+    "tray"
+  ],
   "sway/workspaces": {
     "disable-scroll": true,
     "format": "{index}",
@@ -14,10 +25,19 @@
   },
   "battery": {
     "interval": 30,
-    "states": {"warning": 15, "critical": 5},
+    "states": {
+      "warning": 15,
+      "critical": 5
+    },
     "format-charging": "",
     "format": "{icon}",
-    "format-icons": ["", "", "", "", ""],
+    "format-icons": [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
     "tooltip": true,
     "tooltip-format": "{capacity}%"
   },
@@ -35,7 +55,10 @@
   },
   "idle_inhibitor": {
     "format": "{icon}",
-    "format-icons": {"activated": "", "deactivated": ""},
+    "format-icons": {
+      "activated": "",
+      "deactivated": ""
+    },
     "tooltip": true
   },
   "pulseaudio": {
@@ -47,21 +70,28 @@
     "format-icons": {
       "headphone": "",
       "headset": "",
-      "default": ["", "", ""]
+      "default": [
+        "",
+        "",
+        ""
+      ]
     },
     "tooltip-format": "{icon} {volume}% {format_source}",
     "on-click": "pavucontrol",
     "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
     "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -5%"
   },
-  "tray": {"icon-size": 21, "spacing": 5},
+  "tray": {
+    "icon-size": 21,
+    "spacing": 5
+  },
   "custom/clipboard": {
     "format": "",
     "interval": 30,
     "exec": "cliphist list | wc -l",
     "tooltip": true,
-    "on-click": "clipboard-menu",
-    "on-click-right": "cliphist wipe"
+    "on-click": "\"$HOME/.local/bin/clipboard-menu\"",
+    "on-click-right": "cliphist wipe && pkill -RTMIN+9 waybar"
   },
   "custom/wf-recorder": {
     "interval": 1,

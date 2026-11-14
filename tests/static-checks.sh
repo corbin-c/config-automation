@@ -7,9 +7,11 @@ done
 bash -n "$ROOT/tests/test-record-screen.sh"
 bash -n "$ROOT/tests/test-start-autotiling.sh"
 bash -n "$ROOT/tests/test-window-switcher.sh"
+bash -n "$ROOT/tests/test-clipboard-menu.sh"
 "$ROOT/tests/test-record-screen.sh"
 "$ROOT/tests/test-start-autotiling.sh"
 "$ROOT/tests/test-window-switcher.sh"
+"$ROOT/tests/test-clipboard-menu.sh"
 python3 - "$ROOT/dotfiles/local-bin/.local/bin/sway-window-switcher" "$ROOT/dotfiles/local-bin/.local/bin/sway-smart-resize" <<'PY'
 import pathlib, sys
 for filename in sys.argv[1:]:
@@ -24,11 +26,14 @@ assert data["width"] == 12
 assert "custom/sunset" not in data["modules-right"]
 assert "custom/wf-recorder" in data["modules-center"]
 print("Waybar JSON and 12px layout: valid")
+assert data["custom/clipboard"]["on-click"] == '\"$HOME/.local/bin/clipboard-menu\"'
 PY
-! grep -q '^@theme' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
-grep -q 'foreground:.*#cdd6f4;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
-grep -q 'background:.*#1e1e2e;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
-grep -q 'lightfg:.*#89b4fa;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+grep -q 'cliphist list -fields mime' "$ROOT/dotfiles/local-bin/.local/bin/clipboard-menu"
+grep -q 'clipboard-menu.log' "$ROOT/dotfiles/local-bin/.local/bin/clipboard-menu"
+# Rofi must match the exact original user config, not the temporary Catppuccin substitutions.
+[[ "$(sha256sum "$ROOT/dotfiles/rofi/.config/rofi/config.rasi" | awk '{print $1}')" == "8128ad55837fecf31ffe1abaf40b96a3e99d7124c6bce5e53bbcc147a608eba5" ]]
+grep -q 'foreground:.*rgba ( 196, 203, 212, 100 % );' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+grep -q 'background:.*rgba ( 45, 48, 59, 95 % );' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
 grep -q 'font: "JetBrainsMono Nerd Font 10"' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
 if command -v rofi >/dev/null 2>&1; then
   rofi -no-config -theme "$ROOT/dotfiles/rofi/.config/rofi/config.rasi" -dump-theme >/dev/null
