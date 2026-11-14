@@ -6,8 +6,10 @@ for f in "$ROOT/install.sh" "$ROOT/scripts/"*.sh "$ROOT/system/sway-workstation-
 done
 bash -n "$ROOT/tests/test-record-screen.sh"
 bash -n "$ROOT/tests/test-start-autotiling.sh"
+bash -n "$ROOT/tests/test-window-switcher.sh"
 "$ROOT/tests/test-record-screen.sh"
 "$ROOT/tests/test-start-autotiling.sh"
+"$ROOT/tests/test-window-switcher.sh"
 python3 - "$ROOT/dotfiles/local-bin/.local/bin/sway-window-switcher" "$ROOT/dotfiles/local-bin/.local/bin/sway-smart-resize" <<'PY'
 import pathlib, sys
 for filename in sys.argv[1:]:
@@ -23,8 +25,16 @@ assert "custom/sunset" not in data["modules-right"]
 assert "custom/wf-recorder" in data["modules-center"]
 print("Waybar JSON and 12px layout: valid")
 PY
-grep -q '^@theme "Manjaro";' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+! grep -q '^@theme' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+grep -q 'foreground:.*#cdd6f4;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+grep -q 'background:.*#1e1e2e;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+grep -q 'lightfg:.*#89b4fa;' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
 grep -q 'font: "JetBrainsMono Nerd Font 10"' "$ROOT/dotfiles/rofi/.config/rofi/config.rasi"
+if command -v rofi >/dev/null 2>&1; then
+  rofi -no-config -theme "$ROOT/dotfiles/rofi/.config/rofi/config.rasi" -dump-theme >/dev/null
+else
+  echo "Rofi theme parser: SKIPPED (rofi is not installed in this test environment)"
+fi
 grep -q 'background: #1e1e2e;' "$ROOT/dotfiles/rofi/.config/rofi/Manjaro.rasi"
 grep -q '^exec \$HOME/.local/bin/start-autotiling$' "$ROOT/dotfiles/sway/.config/sway/config"
 grep -q 'AUTOTILING="\$HOME/.local/bin/autotiling"' "$ROOT/dotfiles/local-bin/.local/bin/start-autotiling"
@@ -43,7 +53,7 @@ grep -q '^bindsym \$mod+w exec firefox$' "$ROOT/dotfiles/sway/.config/sway/confi
 grep -q '^bindsym \$mod+f exec thunar$' "$ROOT/dotfiles/sway/.config/sway/config"
 grep -q '^bindsym \$mod+g exec gnome-terminal -- nvim$' "$ROOT/dotfiles/sway/.config/sway/config"
 grep -q '^bindsym \$mod+space exec \$command_launcher$' "$ROOT/dotfiles/sway/.config/sway/config"
-grep -q '^bindsym \$mod+Tab exec \$window_switcher$' "$ROOT/dotfiles/sway/.config/sway/config"
+grep -q '^bindsym \$mod+Tab exec --no-startup-id \$HOME/.local/bin/sway-window-switcher$' "$ROOT/dotfiles/sway/.config/sway/config"
 grep -qx 'thunar' "$ROOT/packages/desktop.apt"
 grep -q '^bindsym \$mod+Delete mode \$mode_exit$' "$ROOT/dotfiles/sway/.config/sway/config"
 grep -q '^bindsym \$mod+Shift+r mode \$mode_recording$' "$ROOT/dotfiles/sway/.config/sway/config"

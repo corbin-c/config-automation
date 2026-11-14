@@ -1,11 +1,25 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 """Rofi window picker backed by Sway IPC (includes native Wayland windows)."""
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
+
+STATE = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "sway-workstation"
+LOG = STATE / "window-switcher.log"
+
+
+def log(message: str) -> None:
+    try:
+        STATE.mkdir(parents=True, exist_ok=True)
+        with LOG.open("a", encoding="utf-8") as stream:
+            stream.write(message.rstrip() + "\n")
+    except OSError:
+        pass
 
 
 def sway_tree() -> dict[str, Any]:
@@ -16,10 +30,9 @@ def sway_tree() -> dict[str, Any]:
 def collect_windows(node: dict[str, Any], workspace: str = "") -> list[dict[str, Any]]:
     if node.get("type") == "workspace":
         workspace = str(node.get("name", ""))
-
     result: list[dict[str, Any]] = []
     children = node.get("nodes", []) + node.get("floating_nodes", [])
-    if node.get("type") == "con" and not children and node.get("id"):
+    if node.get("type") == "con" and not children and node.get("id") is not None:
         props = node.get("window_properties") or {}
         app = node.get("app_id") or props.get("class") or props.get("instance") or "Window"
         title = node.get("name") or props.get("title") or app
@@ -37,43 +50,52 @@ def collect_windows(node: dict[str, Any], workspace: str = "") -> list[dict[str,
 
 
 def main() -> int:
+    log("invoked")
     try:
         windows = collect_windows(sway_tree())
     except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        log(f"Sway IPC error: {exc}")
         print(f"sway-window-switcher: cannot read Sway tree: {exc}", file=sys.stderr)
         return 1
-
     if not windows:
+        log("No eligible windows found")
         return 0
 
-    # Put the currently focused window last. Rofi's initial selection is then
-    # another window, so Super+Tab followed by Enter actually changes focus.
+    # Put the focused window last so the initial selection is another window.
     windows.sort(key=lambda w: (w["focused"], w["workspace"], w["app"].lower(), w["title"].lower()))
     labels = []
     for win in windows:
         title = " ".join(win["title"].split())
         app = " ".join(win["app"].split())
-        label = f'{win["workspace"]}  {app}  —  {title}'
-        labels.append(label[:180])
+        labels.append(f'{win["workspace"]}  {app}  —  {title}'[:180])
 
-    picker = subprocess.run(
-        ["rofi", "-dmenu", "-i", "-p", "Windows", "-format", "i"],
-        input="\n".join(labels) + "\n",
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    if picker.returncode != 0 or not picker.stdout.strip():
+    try:
+        picker = subprocess.run(
+            ["rofi", "-dmenu", "-i", "-p", "Windows", "-format", "i", "-no-custom"],
+            input="\n".join(labels) + "\n",
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError as exc:
+        log(f"Cannot start Rofi: {exc}")
+        return 1
+    if picker.returncode != 0:
+        if picker.stderr.strip():
+            log(f"Rofi exited {picker.returncode}: {picker.stderr.strip()}")
+        else:
+            log(f"Rofi cancelled or exited {picker.returncode}")
         return 0
     try:
         index = int(picker.stdout.strip().splitlines()[-1])
         selected = windows[index]
     except (ValueError, IndexError):
+        log(f"Unexpected Rofi selection: {picker.stdout!r}")
         return 1
-
-    subprocess.run(["swaymsg", "-q", f'[con_id={selected["id"]}] focus'], check=False)
-    return 0
+    result = subprocess.run(["swaymsg", "-q", f'[con_id={selected["id"]}] focus'], check=False)
+    log(f"Focused con_id={selected['id']} (swaymsg status {result.returncode})")
+    return result.returncode
 
 
 if __name__ == "__main__":

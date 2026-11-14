@@ -1,6 +1,6 @@
 # Minimal Ubuntu Sway Session
 
-**Version:** 0.1.2  
+**Version:** 0.1.4  
 **Target:** Ubuntu 24.04 LTS (Noble), with the standard GNOME desktop and GDM installed.
 
 This repository adds a separate Sway login session. It does not replace GNOME or attempt to turn GNOME Shell into a tiling window manager.
@@ -11,12 +11,12 @@ Included:
 
 - Ubuntu-packaged Sway, Waybar, Rofi, Mako, Swaylock and Swayidle.
 - Upstream `autotiling` 1.9.3, installed in an isolated `pipx` environment and launched by its absolute path. It chooses split orientation from the focused container dimensions; it is not a fixed alternating-orientation algorithm.
-- The user's original Rofi `config.rasi` and `Manjaro.rasi` palette, loaded together so the original Catppuccin colours and layout are both applied.
+- The user's original Rofi layout and Manjaro palette, applied directly in `config.rasi` without a theme-loader directive (avoids Rofi parser errors).
 - The user's original narrow, 12px vertical Waybar layout and Catppuccin Mocha palette. The Manjaro-only Waybar template import was replaced with local CSS; sunset controls were removed as previously requested.
 - Focus follows mouse; Flashfocus 2.9.0 is installed in an isolated `pipx` environment by default.
 - Super + arrow focus; Super + Shift + arrow move; Super + Ctrl + arrow resize.
 - Ten numbered workspaces, using French AZERTY keysyms for the number row.
-- Rofi application launcher (Super+D), the original Spotlight file search (Super+Space), and a Sway IPC window picker (Super+Tab).
+- Rofi application launcher (Super+D), the original Spotlight file search (Super+Space), and a Sway IPC window picker (Super+Tab), with invocation and error logging under `~/.local/state/sway-workstation/window-switcher.log`.
 - Cliphist text and image history (Super+V), with MIME-aware restoration.
 - Breeze cursor theme selected by Sway and passed to applications from the dedicated Sway session entry.
 - Generic French keyboard and touchpad configuration.
@@ -140,7 +140,7 @@ Static checks do not prove that Sway starts correctly on the target laptop. Befo
 4. Test focus-follows-mouse and Flashfocus animation.
 5. Test directional focus, move and resize bindings.
 6. Test all ten workspaces with the French AZERTY keyboard.
-7. Test Super+D app launcher, Super+Space Spotlight search, and Super+Tab native Wayland window picker.
+7. Test Super+D app launcher, Super+Space Spotlight search, and Super+Tab native Wayland window picker. If the picker does not appear, inspect `~/.local/state/sway-workstation/window-switcher.log`; it records invocation and Rofi/Sway IPC errors.
 8. Copy text and images, select each from cliphist, and verify paste MIME types.
 9. Check pointer shape in GTK, Qt, browser and XWayland applications.
 10. Test the exit menu (lock, logout, suspend, reboot, shutdown) and confirm Escape cancels it.

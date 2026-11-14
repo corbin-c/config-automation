@@ -86,12 +86,12 @@ bindsym $mod+f exec thunar
 bindsym $mod+g exec gnome-terminal -- nvim
 bindsym $mod+d exec $app_launcher
 bindsym $mod+space exec $command_launcher
-bindsym $mod+Tab exec $window_switcher
+bindsym $mod+Tab exec --no-startup-id $HOME/.local/bin/sway-window-switcher
 bindsym $mod+v exec $clipboard_menu
 bindsym Alt+F4 kill
 bindsym $mod+Shift+c reload
 bindsym Control+Shift+BackSpace reload
-bindsym Alt+Space exec $window_switcher
+bindsym Alt+Space exec --no-startup-id $HOME/.local/bin/sway-window-switcher
 bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
 bindsym F11 fullscreen
 bindsym $mod+exclam layout tabbed
