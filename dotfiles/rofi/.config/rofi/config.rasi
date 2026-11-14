@@ -2,11 +2,8 @@ configuration {
     modi: "drun,run,window";
     show-icons: true;
     drun-display-format: "{name}";
-    display-drun: "Apps";
-    display-run: "Run";
-    display-window: "Windows";
     font: "JetBrains Mono 10";
-    terminal: "foot";
+    terminal: "gnome-terminal";
     location: 0;
     width: 38;
     lines: 12;
@@ -25,9 +22,9 @@ configuration {
     text-color: @fg;
     border-color: @accent;
 }
-window { width: 38em; border: 2px; border-radius: 10px; padding: 14px; }
-mainbox { spacing: 8px; }
+window { width: 38em; border: 1px; border-radius: 8px; padding: 12px; }
+mainbox { spacing: 7px; }
 inputbar { children: [prompt, entry]; spacing: 8px; }
-listview { lines: 12; columns: 1; spacing: 4px; }
-element { padding: 7px 10px; border-radius: 6px; }
+listview { lines: 12; columns: 1; spacing: 3px; }
+element { padding: 6px 9px; border-radius: 5px; }
 element selected { background-color: @selected; }

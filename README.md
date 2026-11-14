@@ -1,109 +1,116 @@
-# Ubuntu Sway Workstation Bootstrap
+# Minimal Ubuntu Sway Session
 
-**Version:** 0.2.0
+**Version:** 0.1.0  
+**Target:** Ubuntu 24.04 LTS (Noble) with the standard GNOME desktop and GDM already installed.
 
-**Target:** Ubuntu 24.04 LTS (Noble), GNOME/GDM installation retained.
+This repository adds a separate Sway login session. It does not replace GNOME or attempt to turn GNOME Shell into a tiling window manager.
 
-This repository is a conservative migration of a customized Manjaro/Sway workstation. It is not a copy of the old system configuration. Ubuntu remains the owner of system services and session infrastructure; this repository manages user dotfiles and a small set of user scripts.
+## Scope
 
-## Decisions and ownership
+Included:
 
-- GDM remains the display manager; GNOME remains installed and selectable.
-- Sway comes from Ubuntu 24.04 repositories. No PPA or upstream compositor build is added.
-- GNU Stow deploys user configuration from `dotfiles/` into `$HOME`.
-- Ubuntu owns PolicyKit, XDG portals, D-Bus, PipeWire/WirePlumber, NetworkManager and system power management.
-- GNOME owns GTK, cursor and icon preferences. Foot and Neovim have independent Catppuccin Mocha themes.
-- No `/etc` configuration, systemd units, system services, GDM defaults or default session are changed.
-- Zsh remains an opt-in login-shell change; the installer does not call `chsh` unless explicitly asked.
+- Ubuntu-packaged Sway, Waybar, Rofi, Mako, Swaylock and Swayidle.
+- Automatic tree tiling (`default_orientation auto`).
+- Focus follows mouse; Flashfocus 2.9.0 is installed in an isolated `pipx` environment by default.
+- Super + arrow focus; Super + Shift + arrow move; Super + Ctrl + arrow resize.
+- Ten numbered workspaces, using French AZERTY keysyms for the number row.
+- Rofi application launcher (Super+D), command launcher (Super+Space), and a Sway IPC window picker (Super+Tab).
+- Cliphist text and image history (Super+V), with MIME-aware restoration.
+- A narrow 30px Waybar and 1px inner gaps.
+- Generic French keyboard and touchpad configuration.
 
-## Profiles
+Not included:
 
-| Profile | Installs | Deploys |
-|---|---|---|
-| `desktop` (default) | Sway session tools, Waybar, Rofi, Foot, Mako, clipboard, screenshots, `wf-recorder`, portals, PolicyKit agent, fonts and dependencies | Sway, Waybar, Rofi, Foot, Mako, Zsh, local scripts, optional Kanshi example |
-| `development` | btop, ripgrep, fzf, build tools, Python venv support | Zsh, Neovim config, btop |
-| `all` | Both package manifests | Both dotfile sets |
-
-The development profile installs upstream Neovim via Snap only when no `nvim` is already present. An existing Neovim older than 0.11.2 causes a clear stop; it is not silently replaced. Snap's classic confinement is an explicit trade-off. If you do not want Snap, install a compatible Neovim yourself and run `--no-packages`.
+- Foot or terminal configuration. Super+Enter temporarily opens the existing GNOME Terminal.
+- Neovim, Zsh, Oh My Zsh, development packages or shell changes.
+- Scratchpad, tabbed/stacking layout bindings, floating-window controls, weather, time tracking, sunset controls, or personal application configuration.
+- Custom system services, systemd targets, `/etc` edits, GDM changes, default-session changes, or GNOME settings changes.
 
 ## Install
 
-On a clean Ubuntu 24.04 LTS installation, obtain this repository from your own Git remote or extract the release archive. From its root:
+Extract or clone the repository to a stable location, then run it as your normal desktop user (not with `sudo`):
 
 ```bash
 ./install.sh --dry-run
-./install.sh --profile desktop
-# or: ./install.sh --profile all
+./install.sh
 ```
 
-For an actual Git checkout, initialize/attach your own remote as appropriate. The release archive does not invent or embed a remote URL.
-
-Useful options:
+Options:
 
 ```bash
-./install.sh --profile development
-./install.sh --profile all --dry-run
-./install.sh --no-packages                 # requires dependencies already installed
-./install.sh --no-oh-my-zsh
-./install.sh --set-default-shell           # explicit, opt-in passwd shell change
+./install.sh --without-flashfocus  # use Sway focus-follows-mouse without animation
+./install.sh --no-packages         # deploy files only; dependencies must already exist
 ```
 
-The installer validates that the host is Ubuntu 24.04. It does not remove packages, edit `/etc`, change GDM, change GNOME settings or change the default session.
+The installer checks for Ubuntu 24.04. It installs APT packages from Ubuntu repositories using `--no-install-recommends`; in particular, this avoids pulling Foot in as Sway's optional recommendation. Flashfocus is installed separately with pipx, pinned to 2.9.0; it is not installed into Ubuntu's system Python. The package's documented native build dependencies are installed through APT.
 
-## Deployment and backups
+## GNOME fallback
 
-Stow uses `--no-folding`, so config directories remain real directories and individual managed files are symlinks into this checkout. This allows applications to keep writing their state under `$HOME` rather than into the Git working tree.
+GDM remains the display manager. GNOME remains installed and selectable. At the login screen, select the Sway session from the session chooser. To return to GNOME, log out and select Ubuntu/GNOME. The installer does not set Sway as the default session.
 
-Before deployment, the script backs up only exact conflicting files/links. Existing config directories, unrelated files and generated application state are preserved. Re-running the installer does not move the entire config directory into backups. Unknown pre-existing files in include directories are deliberately not deleted; inspect `~/.config/sway/config.d/` and `~/.config/zsh/config.d/` if migrating from another setup.
+## Keybindings
 
-Backups are stored under:
+| Shortcut | Action |
+|---|---|
+| Super+Enter | Existing GNOME Terminal |
+| Super+D | Rofi application launcher |
+| Super+Space | Rofi command launcher |
+| Super+Tab | Sway-aware window picker |
+| Super+V | Clipboard history |
+| Super+Arrows | Focus in direction |
+| Super+Shift+Arrows | Move focused window |
+| Super+Ctrl+Arrows | Smart resize |
+| Super+1…0 | Switch workspace 1…10 |
+| Super+Shift+1…0 | Move window to workspace 1…10 |
+| Super+Shift+Q | Lock screen |
+| Super+Shift+C | Reload Sway configuration |
+| F11 | Fullscreen toggle |
+| Super+F9 | Toggle touchpad events |
+
+On the French AZERTY layout, the unshifted number row is represented by `&`, `é`, `"`, `'`, `(`, `-`, `è`, `_`, `ç`, `à`. The bindings use these symbols so the physical number row works without Shift.
+
+## Clipboard history
+
+`wl-paste` listeners store text plus PNG, JPEG and WebP clipboard images in cliphist. They set `CLIPBOARD_TYPE` explicitly because Ubuntu 24.04's wl-clipboard 2.2.1 predates the newer MIME-type environment support used by current cliphist examples. The picker shows the preview while retaining the entry ID internally. When restoring an image, it reads the recorded MIME type and passes that to `wl-copy`, rather than mislabelling image bytes as plain text. The history is stored under `~/.cache/cliphist/`.
+
+## Deployment and rollback
+
+Files are symlinked individually from this repository into `$HOME`. Existing conflicting files are moved to:
 
 ```text
-~/.local/state/workstation-backups/<timestamp>-<random>/
+~/.local/state/sway-workstation-backups/<timestamp>-<random>/
 ```
 
-List backups and restore files only when their destination is absent:
+Unrelated files and application state are left in place. Keep the repository at its current path because the deployed links point into it.
+
+List backups and remove the managed links:
 
 ```bash
 ./scripts/rollback.sh list
+./scripts/unlink.sh
 ./scripts/rollback.sh restore <backup-directory-name>
 ```
 
-The rollback helper never overwrites a currently existing path. It retains the backup directory after restore. Review its output; this is a file-level restore, not a full system snapshot.
+`unlink.sh` removes only symlinks that still point into this repository; it does not delete user files. `rollback.sh restore` also removes a matching managed symlink at a backed-up destination before restoring the original file. Other existing destinations are skipped. This is a file-level rollback, not a full system snapshot.
 
-## Sway behavior
+## Verification status
 
-- French AZERTY layout; generic touchpad settings (`natural_scroll disabled`, `dwt`, `dwtp`, `tap` enabled).
-- Vim-style focus/movement, resize mode, workspaces, floating drag modifier and built-in Alt+Tab cycling.
-- Five-minute lock timeout and lock-before-sleep. Ubuntu retains ownership of suspend and display power policy.
-- `Super+Shift+E` opens a confirmation-based power menu; `Super+Shift+Q` locks.
-- Print copies a full screenshot; Super+Print copies a selected region. Shift+Print and Super+Shift+Print save PNGs under `~/Pictures/Screenshots/`.
-- Super+Shift+R toggles screen recording; active recording appears in Waybar and can be stopped by clicking the indicator. Videos go to `~/Videos/Recordings/`.
-- A solid Catppuccin background is set by default. Machine-specific output layout belongs in `~/.config/sway/config.d/local.conf`.
-
-The screenshot workflow saves/copies PNGs. Clipboard history is text-only in this version. Annotation through Swappy is optional and only activated if a compatible `swappy` command is installed separately; Swappy is not in Noble's package archive. No screenshot upload is included.
-
-## Oh My Zsh
-
-Oh My Zsh is cloned to `~/.local/share/oh-my-zsh`; the interactive config is `~/.config/zsh/.zshrc`, selected by `~/.zshenv`. Manjaro Zsh snippets, pyenv initialization and the old nested Zsh indirection are not used. The installer shallow-clones the upstream default branch if absent and records no automatic update policy; for reproducible environments, pin a reviewed commit in your own deployment process.
-
-## Neovim and language tooling
-
-The retained LazyVim configuration includes language extras for JSON, Markdown, PHP, Prisma, Python, Tailwind, TOML, TypeScript, Vue and YAML, plus ESLint and Prettier. The bootstrap does not install every language runtime, package manager or formatter. Install the relevant toolchains only for languages you use. The OpenSCAD formatter configured in `conform.lua` requires `openscad-format` to be installed separately; formatting will not work until it is available.
-
-## Verification
+Run:
 
 ```bash
-./scripts/verify.sh --profile desktop
-./scripts/verify.sh --profile development
+./tests/static-checks.sh
 ```
 
-Run `./tests/static-checks.sh` for the local static checks. Static checks are not a substitute for a clean Ubuntu 24.04 VM. Follow `tests/vm-checklist.md` before using this on a work machine.
+Static checks do not prove that Sway starts correctly on the target laptop. Before relying on it, test in an Ubuntu 24.04 VM or spare installation:
 
-## Layout
+1. Confirm both Ubuntu/GNOME and Sway appear in GDM.
+2. Test automatic split direction with several windows.
+3. Test focus-follows-mouse and Flashfocus animation.
+4. Test directional focus, move and resize bindings.
+5. Test all ten workspaces with the French AZERTY keyboard.
+6. Test Rofi app, command and native Wayland window pickers.
+7. Copy text and images, select each from cliphist, and verify paste MIME types.
+8. Test NetworkManager applet, PolicyKit prompts, screen sharing/portals, audio and suspend/resume.
+9. Log out of Sway and confirm GNOME still works normally.
 
-- `packages/`: APT package manifests.
-- `dotfiles/`: GNU Stow packages.
-- `scripts/`: installer, deployment, rollback, verification and session helpers.
-- `docs/`: architecture, migration notes, compatibility and font notes.
-- `tests/`: VM acceptance checklist.
+No VM test has been performed as part of producing this archive.

@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""Rofi window picker backed by Sway IPC (includes native Wayland windows)."""
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from typing import Any
+
+
+def sway_tree() -> dict[str, Any]:
+    raw = subprocess.check_output(["swaymsg", "-r", "-t", "get_tree"], text=True)
+    return json.loads(raw)
+
+
+def collect_windows(node: dict[str, Any], workspace: str = "") -> list[dict[str, Any]]:
+    if node.get("type") == "workspace":
+        workspace = str(node.get("name", ""))
+
+    result: list[dict[str, Any]] = []
+    children = node.get("nodes", []) + node.get("floating_nodes", [])
+    if node.get("type") == "con" and not children and node.get("id"):
+        props = node.get("window_properties") or {}
+        app = node.get("app_id") or props.get("class") or props.get("instance") or "Window"
+        title = node.get("name") or props.get("title") or app
+        if node.get("scratchpad_state") in (None, "none"):
+            result.append({
+                "id": int(node["id"]),
+                "workspace": workspace,
+                "app": str(app),
+                "title": str(title),
+                "focused": bool(node.get("focused")),
+            })
+    for child in children:
+        result.extend(collect_windows(child, workspace))
+    return result
+
+
+def main() -> int:
+    try:
+        windows = collect_windows(sway_tree())
+    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        print(f"sway-window-switcher: cannot read Sway tree: {exc}", file=sys.stderr)
+        return 1
+
+    if not windows:
+        return 0
+
+    # Put the currently focused window last. Rofi's initial selection is then
+    # another window, so Super+Tab followed by Enter actually changes focus.
+    windows.sort(key=lambda w: (w["focused"], w["workspace"], w["app"].lower(), w["title"].lower()))
+    labels = []
+    for win in windows:
+        title = " ".join(win["title"].split())
+        app = " ".join(win["app"].split())
+        label = f'{win["workspace"]}  {app}  —  {title}'
+        labels.append(label[:180])
+
+    picker = subprocess.run(
+        ["rofi", "-dmenu", "-i", "-p", "Windows", "-format", "i"],
+        input="\n".join(labels) + "\n",
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if picker.returncode != 0 or not picker.stdout.strip():
+        return 0
+    try:
+        index = int(picker.stdout.strip().splitlines()[-1])
+        selected = windows[index]
+    except (ValueError, IndexError):
+        return 1
+
+    subprocess.run(["swaymsg", "-q", f'[con_id={selected["id"]}] focus'], check=False)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

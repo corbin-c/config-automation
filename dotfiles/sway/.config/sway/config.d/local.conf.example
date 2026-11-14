@@ -1,5 +1,0 @@
-# Copy to ~/.config/sway/config.d/local.conf and edit for this machine.
-# Use `swaymsg -t get_outputs` and `swaymsg -t get_inputs` to inspect identifiers.
-# Example:
-# output eDP-1 scale 1.25
-# output DP-1 position 0 0

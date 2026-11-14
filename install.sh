@@ -1,97 +1,101 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROFILE=desktop DRY_RUN=0 INSTALL_PACKAGES=1 INSTALL_OMZ=1 SET_DEFAULT_SHELL=0
+DRY_RUN=0
+NO_PACKAGES=0
+WITH_FLASHFOCUS=1
 
 usage() {
   cat <<'USAGE'
+Ubuntu Sway session bootstrap
+
 Usage: ./install.sh [options]
-  --profile desktop|development|all  Package/config profile (default: desktop)
-  --dry-run                           Show planned actions only
-  --no-packages                       Skip APT package installation
-  --no-oh-my-zsh                      Do not clone Oh My Zsh
-  --set-default-shell                 Make Zsh the login shell (opt-in)
-  -h, --help                          Show this help
+  --dry-run             Show planned package and file operations; change nothing
+  --no-packages         Skip APT and Flashfocus installation
+  --without-flashfocus  Do not install Flashfocus (focus-following still works)
+  -h, --help            Show this help
+
+This installs a separate Sway session. It does not remove GNOME, change GDM,
+change the default session, alter GNOME settings, or replace Neovim.
 USAGE
 }
 while (($#)); do
   case "$1" in
-    --profile) PROFILE="${2:?Missing profile}"; shift 2 ;;
-    --dry-run) DRY_RUN=1; shift ;;
-    --no-packages) INSTALL_PACKAGES=0; shift ;;
-    --no-oh-my-zsh) INSTALL_OMZ=0; shift ;;
-    --set-default-shell) SET_DEFAULT_SHELL=1; shift ;;
+    --dry-run) DRY_RUN=1 ;;
+    --no-packages) NO_PACKAGES=1 ;;
+    --without-flashfocus) WITH_FLASHFOCUS=0 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
+  shift
 done
-case "$PROFILE" in desktop|development|all) ;; *) echo "Invalid profile: $PROFILE" >&2; exit 2 ;; esac
 
-[[ -r /etc/os-release ]] || { echo "Cannot identify operating system (/etc/os-release missing)." >&2; exit 1; }
+if [[ "$EUID" -eq 0 ]]; then
+  echo "Run this installer as your normal desktop user, not as root; it invokes sudo only for APT." >&2
+  exit 1
+fi
+if [[ ! -r /etc/os-release ]]; then echo "Cannot identify operating system." >&2; exit 1; fi
 # shellcheck disable=SC1091
 . /etc/os-release
-[[ "${ID:-}" == ubuntu && "${VERSION_ID:-}" == 24.04 ]] || {
-  echo "This bootstrap targets Ubuntu 24.04 LTS; detected ${PRETTY_NAME:-unknown}." >&2; exit 1;
-}
-if ((INSTALL_PACKAGES)); then
-  command -v apt-get >/dev/null || { echo "apt-get is required." >&2; exit 1; }
-  command -v sudo >/dev/null || { echo "sudo is required for package installation." >&2; exit 1; }
+if [[ "${ID:-}" != ubuntu || "${VERSION_ID:-}" != 24.04 ]]; then
+  echo "This bootstrap targets Ubuntu 24.04 LTS only; detected ${PRETTY_NAME:-unknown}." >&2
+  exit 1
 fi
 
-manifests=()
-case "$PROFILE" in
-  desktop) manifests+=("$ROOT/packages/desktop.apt") ;;
-  development) manifests+=("$ROOT/packages/development.apt") ;;
-  all) manifests+=("$ROOT/packages/desktop.apt" "$ROOT/packages/development.apt") ;;
-esac
-case "$PROFILE" in
-  desktop) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi) ;;
-  development) stow_packages=(zsh neovim btop) ;;
-  all) stow_packages=(sway waybar rofi foot mako zsh local-bin kanshi neovim btop) ;;
-esac
-
+mapfile -t packages < <(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/packages/desktop.apt")
 if ((DRY_RUN)); then
-  echo "[dry-run] Ubuntu check passed: ${PRETTY_NAME}"
-  if ((INSTALL_PACKAGES)); then
-    for manifest in "${manifests[@]}"; do
-      echo "[dry-run] APT packages from $(basename "$manifest"):"
-      sed -E '/^[[:space:]]*(#|$)/d' "$manifest" | sed 's/^/  /'
-    done
+  printf 'Target: %s\n' "$PRETTY_NAME"
+  printf 'APT packages:\n'; printf '  %s\n' "${packages[@]}"
+  if ((WITH_FLASHFOCUS)); then
+    printf 'Flashfocus: pipx install flashfocus==2.9.0 (with native build dependencies)\n'
+  else
+    printf 'Flashfocus: skipped\n'
   fi
-  printf '[dry-run] Stow packages: %s\n' "${stow_packages[*]}"
-  ((INSTALL_OMZ)) && echo "[dry-run] Clone Oh My Zsh if absent: ~/.local/share/oh-my-zsh"
-  if ((SET_DEFAULT_SHELL)); then echo "[dry-run] Change passwd login shell to Zsh (if different)"; fi
-  [[ "$PROFILE" == development || "$PROFILE" == all ]] && echo "[dry-run] Install upstream Neovim Snap if absent; reject an existing version older than 0.11.2"
+  printf 'Dotfiles: link files from %s into $HOME, backing up exact conflicts.\n' "$ROOT/dotfiles"
+  printf 'No changes will be made.\n'
   exit 0
 fi
 
-install_manifest() {
-  local manifest="$1"
-  mapfile -t packages < <(sed -E '/^[[:space:]]*(#|$)/d' "$manifest")
-  ((${#packages[@]})) || return 0
-  echo "Installing packages from $(basename "$manifest")..."
-  sudo apt-get install -y --no-install-recommends "${packages[@]}"
-}
-if ((INSTALL_PACKAGES)); then
-  sudo apt-get update
-  for manifest in "${manifests[@]}"; do install_manifest "$manifest"; done
+if (( ! NO_PACKAGES )); then
+  SUDO=()
+  if [[ "$EUID" -ne 0 ]]; then
+    command -v sudo >/dev/null 2>&1 || { echo "sudo is required to install APT packages." >&2; exit 1; }
+    SUDO=(sudo)
+  fi
+  "${SUDO[@]}" apt-get update
+  "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
+
+  if ((WITH_FLASHFOCUS)); then
+    flashfocus_packages=(pipx libxcb-render0-dev libffi-dev python3-dev python3-cffi)
+    "${SUDO[@]}" apt-get install -y --no-install-recommends "${flashfocus_packages[@]}"
+    pipx_packages="$(pipx list 2>/dev/null || true)"
+    if grep -Fq 'package flashfocus 2.9.0,' <<<"$pipx_packages"; then
+      echo "Flashfocus 2.9.0 is already installed with pipx."
+    else
+      legacy_flashfocus="$HOME/.local/bin/flashfocus"
+      if [[ ( -e "$legacy_flashfocus" || -L "$legacy_flashfocus" ) ]] && ! grep -Fq 'package flashfocus ' <<<"$pipx_packages"; then
+        backup_dir="${XDG_STATE_HOME:-$HOME/.local/state}/sway-workstation-backups/$(date +%Y%m%d-%H%M%S)-flashfocus"
+        mkdir -p "$backup_dir"
+        mv -- "$legacy_flashfocus" "$backup_dir/flashfocus"
+        echo "Moved a pre-existing Flashfocus launcher to $backup_dir/flashfocus"
+      fi
+      pipx install --force --python python3 'flashfocus==2.9.0'
+    fi
+  fi
+else
+  echo "Skipping package installation (--no-packages)."
 fi
 
-if ((INSTALL_OMZ)); then "$ROOT/scripts/install-oh-my-zsh.sh"; fi
-if ((SET_DEFAULT_SHELL)); then
-  zsh_path="$(command -v zsh)" || { echo "zsh is not installed; cannot change the login shell." >&2; exit 1; }
-  passwd_shell="$(getent passwd "${USER:-$(id -un)}" | cut -d: -f7)"
-  if [[ "$passwd_shell" != "$zsh_path" ]]; then chsh -s "$zsh_path"; else echo "Zsh is already the login shell."; fi
-fi
+"$ROOT/scripts/deploy.sh"
+cat <<'DONE'
 
-if [[ "$PROFILE" == development || "$PROFILE" == all ]]; then
-  if ((INSTALL_PACKAGES)); then "$ROOT/scripts/install-neovim.sh"; fi
-fi
-"$ROOT/scripts/deploy-dotfiles.sh" "${stow_packages[@]}"
+Installation files deployed.
 
-echo
-echo "Bootstrap completed. No display-manager or system-session defaults were changed."
-if [[ "$PROFILE" == desktop || "$PROFILE" == all ]]; then
-  echo "Log out and choose Sway from GDM's session menu."
-  echo "Run ./scripts/verify.sh --profile desktop after logging into Sway."
-fi
+Next steps:
+  1. Log out.
+  2. At GDM, select your user, open the session chooser, and choose Sway.
+  3. Log in. GNOME remains available from the same chooser.
+
+Do not change GDM or the default session. If Sway does not start, choose GNOME
+again at GDM; the installer has not changed the GNOME session.
+DONE

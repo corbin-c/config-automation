@@ -1,0 +1,55 @@
+{
+  "layer": "top",
+  "position": "left",
+  "width": 30,
+  "spacing": 2,
+  "modules-left": ["sway/workspaces"],
+  "modules-center": ["custom/clipboard"],
+  "modules-right": ["battery", "network", "pulseaudio", "clock", "tray"],
+  "sway/workspaces": {
+    "disable-scroll": true,
+    "format": "{index}",
+    "current-only": false
+  },
+  "battery": {
+    "interval": 30,
+    "states": {"warning": 20, "critical": 8},
+    "format": "{icon}",
+    "format-charging": "",
+    "format-icons": ["", "", "", "", ""],
+    "tooltip-format": "{capacity}%"
+  },
+  "network": {
+    "interval": 5,
+    "format-wifi": "",
+    "format-ethernet": "ETH",
+    "format-disconnected": "×",
+    "tooltip-format": "{ifname}: {ipaddr}",
+    "on-click": "nm-connection-editor"
+  },
+  "pulseaudio": {
+    "scroll-step": 5,
+    "format": "{icon}",
+    "format-muted": "",
+    "format-icons": {"headphone": "", "hands-free": "", "headset": "", "default": ["", "", ""]},
+    "tooltip-format": "{volume}%",
+    "on-click": "pavucontrol",
+    "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
+    "on-scroll-down": "pactl set-sink-volume @DEFAULT_SINK@ -5%"
+  },
+  "clock": {
+    "interval": 30,
+    "format": "",
+    "tooltip": true,
+    "tooltip-format": "{:%A %d %B %Y}\n{:%H:%M:%S}"
+  },
+  "tray": {"icon-size": 16, "spacing": 4},
+  "custom/clipboard": {
+    "format": "",
+    "tooltip": true,
+    "exec": "cliphist list | wc -l",
+    "interval": 30,
+    "on-click": "$HOME/.local/bin/clipboard-menu",
+    "on-click-right": "cliphist wipe"
+  }
+}

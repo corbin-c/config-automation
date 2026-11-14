@@ -1,6 +1,0 @@
-# Copy to ~/.config/kanshi/config after identifying real output names.
-# Run `kanshi -c ~/.config/kanshi/config` to validate the profile.
-# profile {
-#     output DP-1 enable position 0,0
-#     output eDP-1 disable
-# }

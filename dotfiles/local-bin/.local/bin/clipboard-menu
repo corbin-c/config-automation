@@ -1,9 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
-if ! command -v cliphist >/dev/null || ! command -v wl-copy >/dev/null; then
-  notify-send "Clipboard history" "Install cliphist and wl-clipboard to use this menu."
-  exit 1
-fi
-selection="$(cliphist list | rofi -dmenu -i -p Clipboard)" || exit 0
+
+for cmd in cliphist rofi wl-copy; do
+  command -v "$cmd" >/dev/null 2>&1 || {
+    notify-send "Clipboard history" "Missing command: $cmd"
+    exit 1
+  }
+done
+
+selection="$(cliphist list | rofi -dmenu -i -p Clipboard -display-columns 2)" || exit 0
 [[ -n "$selection" ]] || exit 0
-printf '%s\n' "$selection" | cliphist decode | wl-copy
+
+# cliphist's first field is a stable entry ID. Read the stored MIME type so
+# images are restored as images instead of being advertised as plain text.
+id="${selection%%$'\t'*}"
+[[ "$id" =~ ^[0-9]+$ ]] || exit 1
+mime="$(cliphist list -fields mime "$id" 2>/dev/null | head -n1 || true)"
+if [[ "$mime" == image/* ]]; then
+  printf '%s\n' "$selection" | cliphist decode | wl-copy --type "$mime"
+else
+  printf '%s\n' "$selection" | cliphist decode | wl-copy
+fi

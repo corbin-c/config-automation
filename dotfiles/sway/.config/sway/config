@@ -1,27 +1,23 @@
-# Ubuntu 24.04 Sway configuration.
-# Ubuntu owns the display manager, session entry, D-Bus, portals, PolicyKit daemon,
-# NetworkManager, PipeWire/WirePlumber and system power policy. This file owns only
-# the user's compositor behavior and starts a few user-session applications.
+# Minimal Sway session for Ubuntu 24.04.
+# GNOME and GDM remain installed and unchanged; choose Sway at the login screen.
 
 set $mod Mod4
-set $term foot
-set $menu rofi -show drun
-set $browser firefox
-set $file_manager nautilus
-set $locker swaylock --config $HOME/.config/swaylock/config --daemonize --show-failed-attempts --clock
-set $power_menu $HOME/.local/bin/sway-power-menu
-set $screenshot $HOME/.local/bin/screenshot
-set $record_screen $HOME/.local/bin/record-screen
+set $terminal gnome-terminal
+set $app_launcher rofi -show drun
+set $command_launcher rofi -show run
+set $window_switcher $HOME/.local/bin/sway-window-switcher
+set $clipboard_menu $HOME/.local/bin/clipboard-menu
+set $resize_helper $HOME/.local/bin/sway-smart-resize
 
 font pango:JetBrains Mono 10
 
-# French AZERTY layout. No hardware-specific keyboard IDs are embedded.
+# French AZERTY, matching the keyboard layout in the previous configuration.
 input type:keyboard {
     xkb_layout fr
     xkb_variant oss
 }
 
-# Retain the previous touchpad preferences without binding them to a device ID.
+# Generic touchpad preferences; no machine-specific device IDs.
 input type:touchpad {
     natural_scroll disabled
     dwt enabled
@@ -29,66 +25,63 @@ input type:touchpad {
     tap enabled
 }
 
-# General behavior
-focus_follows_mouse no
-mouse_warping container
+# Dynamic, automatic tiling. Sway chooses split orientation from available space.
+default_orientation auto
+focus_follows_mouse yes
+mouse_warping none
 workspace_auto_back_and_forth yes
-floating_modifier $mod normal
-default_border pixel 2
-default_floating_border pixel 2
-smart_gaps on
-gaps inner 5
-gaps outer 2
 
-# Catppuccin Mocha window colors.
+# Minimal appearance.
+default_border pixel 1
+default_floating_border pixel 1
+smart_gaps on
+gaps inner 1
+gaps outer 0
+
+# Catppuccin Mocha window colours.
 client.focused          #89b4fa #1e1e2e #cdd6f4 #89b4fa #89b4fa
 client.focused_inactive #45475a #1e1e2e #bac2de #45475a #45475a
 client.unfocused        #313244 #1e1e2e #a6adc8 #313244 #313244
 client.urgent           #f38ba8 #1e1e2e #1e1e2e #f38ba8 #f38ba8
 
-# A deterministic Catppuccin background; replace in config.d/local.conf if wanted.
+# Plain dark background; no wallpaper dependency.
 output * bg #1e1e2e solid_color
 
-# Import the compositor environment into Ubuntu's existing user bus.
-exec_always sh -lc 'systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP; dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP'
+# Make the Wayland session environment available to D-Bus/systemd user services.
+exec systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
+exec dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP
 
-# Ubuntu-packaged PolicyKit agent. No custom agent or system service is installed.
+# Ubuntu's PolicyKit agent, not a custom service.
 exec /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
 
-# Session applications. `exec` prevents duplicates on config reload.
+# Session utilities. `exec` avoids duplicate processes when the config is reloaded.
 exec waybar
 exec mako
 exec nm-applet --indicator
-exec swayidle -w timeout 300 'swaylock --config $HOME/.config/swaylock/config --show-failed-attempts --clock' before-sleep 'swaylock --config $HOME/.config/swaylock/config --show-failed-attempts --clock'
-exec sh -lc 'command -v cliphist >/dev/null && command -v wl-paste >/dev/null && wl-paste --type text --watch cliphist store'
-exec sh -lc 'command -v kanshi >/dev/null && [ -s "$HOME/.config/kanshi/config" ] && kanshi'
+exec swayidle -w timeout 300 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock' before-sleep 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock'
+# Ubuntu 24.04 ships wl-clipboard 2.2.1. Set CLIPBOARD_TYPE explicitly
+# rather than relying on the newer wl-paste behavior added after 2.3.0.
+exec wl-paste --type text --watch sh -c 'export CLIPBOARD_TYPE=text/plain;charset=utf-8; exec cliphist store'
+exec wl-paste --type image/png --watch sh -c 'export CLIPBOARD_TYPE=image/png; exec cliphist store'
+exec wl-paste --type image/jpeg --watch sh -c 'export CLIPBOARD_TYPE=image/jpeg; exec cliphist store'
+exec wl-paste --type image/webp --watch sh -c 'export CLIPBOARD_TYPE=image/webp; exec cliphist store'
+exec sh -lc 'if [ -x "$HOME/.local/bin/flashfocus" ]; then exec "$HOME/.local/bin/flashfocus"; fi'
 
-# Local overrides are deliberately separate from the managed baseline.
+# Optional per-machine settings belong here, not in the managed baseline.
 include $HOME/.config/sway/config.d/*.conf
 
-# Applications and launchers
-bindsym $mod+Return exec $term
-bindsym $mod+Shift+Return exec $term --app-id floating_terminal
-bindsym $mod+d exec $menu
-bindsym $mod+o exec $HOME/.local/bin/rofi-spotlight
-bindsym $mod+f exec $file_manager
-bindsym $mod+w exec $browser
-bindsym $mod+g exec $term -e nvim
+# Applications and launchers.
+bindsym $mod+Return exec $terminal
+bindsym $mod+d exec $app_launcher
+bindsym $mod+space exec $command_launcher
+bindsym $mod+Tab exec $window_switcher
+bindsym $mod+v exec $clipboard_menu
 bindsym Alt+F4 kill
 bindsym $mod+Shift+c reload
-bindsym $mod+Shift+e exec $power_menu
-bindsym $mod+Shift+q exec $locker
-bindsym $mod+Delete exec $power_menu
+bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
+bindsym F11 fullscreen
 
-# Vim-like focus and movement.
-bindsym $mod+h focus left
-bindsym $mod+j focus down
-bindsym $mod+k focus up
-bindsym $mod+l focus right
-bindsym $mod+Shift+h move left
-bindsym $mod+Shift+j move down
-bindsym $mod+Shift+k move up
-bindsym $mod+Shift+l move right
+# Directional focus and movement.
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
 bindsym $mod+Up focus up
@@ -98,42 +91,15 @@ bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
-# Window switching without adding a non-Ubuntu swayr dependency.
-bindsym Alt+Tab focus next
-bindsym Alt+Shift+Tab focus prev
+# Directional resize. The helper grows toward an adjacent tiled window and
+# shrinks toward the outer edge, avoiding unintuitive one-way resizing.
+bindsym Control+$mod+Left exec $resize_helper left
+bindsym Control+$mod+Down exec $resize_helper down
+bindsym Control+$mod+Up exec $resize_helper up
+bindsym Control+$mod+Right exec $resize_helper right
 
-# Resize mode.
-mode "resize" {
-    bindsym h resize shrink width 10 px
-    bindsym j resize grow height 10 px
-    bindsym k resize shrink height 10 px
-    bindsym l resize grow width 10 px
-    bindsym Left resize shrink width 10 px
-    bindsym Down resize grow height 10 px
-    bindsym Up resize shrink height 10 px
-    bindsym Right resize grow width 10 px
-    bindsym plus gaps inner current plus 2 px
-    bindsym minus gaps inner current minus 2 px
-    bindsym Return mode "default"
-    bindsym Escape mode "default"
-}
-bindsym $mod+r mode "resize"
-bindsym Control+$mod+Up exec $HOME/.local/bin/sway-smart-resize up
-bindsym Control+$mod+Down exec $HOME/.local/bin/sway-smart-resize down
-bindsym Control+$mod+Left exec $HOME/.local/bin/sway-smart-resize left
-bindsym Control+$mod+Right exec $HOME/.local/bin/sway-smart-resize right
-
-# Layouts and floating windows.
-bindsym $mod+b splith
-bindsym $mod+v splitv
-bindsym $mod+s layout stacking
-bindsym $mod+e layout toggle split
-bindsym $mod+Shift+space floating toggle
-bindsym $mod+space focus mode_toggle
-bindsym $mod+a focus parent
-bindsym F11 fullscreen
-
-# Workspaces: French AZERTY number row keysyms.
+# Numbered workspaces. French AZERTY number-row keysyms are used so the
+# physical number row works without requiring Shift.
 set $ws1 "1"
 set $ws2 "2"
 set $ws3 "3"
@@ -144,6 +110,7 @@ set $ws7 "7"
 set $ws8 "8"
 set $ws9 "9"
 set $ws10 "10"
+
 bindsym $mod+ampersand workspace $ws1
 bindsym $mod+eacute workspace $ws2
 bindsym $mod+quotedbl workspace $ws3
@@ -154,6 +121,7 @@ bindsym $mod+egrave workspace $ws7
 bindsym $mod+underscore workspace $ws8
 bindsym $mod+ccedilla workspace $ws9
 bindsym $mod+agrave workspace $ws10
+
 bindsym $mod+Shift+ampersand move container to workspace $ws1
 bindsym $mod+Shift+eacute move container to workspace $ws2
 bindsym $mod+Shift+quotedbl move container to workspace $ws3
@@ -164,21 +132,11 @@ bindsym $mod+Shift+egrave move container to workspace $ws7
 bindsym $mod+Shift+underscore move container to workspace $ws8
 bindsym $mod+Shift+ccedilla move container to workspace $ws9
 bindsym $mod+Shift+agrave move container to workspace $ws10
-bindsym $mod+Tab workspace back_and_forth
 
-# Touchpad toggle (generic selector, no source-machine device ID).
+# Lock the touchpad toggle to a generic device selector.
 bindsym $mod+F9 exec swaymsg input type:touchpad events toggle
 
-# Screenshots: clipboard copy and persistent PNG capture.
-bindsym Print exec $screenshot copy-full
-bindsym $mod+Print exec $screenshot copy-area
-bindsym Shift+Print exec $screenshot save-full
-bindsym $mod+Shift+Print exec $screenshot save-area
-
-# Screen recording. Super+Shift+R toggles; click the Waybar REC indicator to stop.
-bindsym $mod+Shift+r exec $record_screen toggle
-
-# Audio / media / brightness keys. Ubuntu PipeWire exposes pactl compatibility.
+# Audio, media and brightness keys. Ubuntu's PipeWire provides pactl compatibility.
 bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
 bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
 bindsym --locked XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
@@ -188,10 +146,3 @@ bindsym --locked XF86AudioNext exec playerctl next
 bindsym --locked XF86AudioPrev exec playerctl previous
 bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
 bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
-
-# Generic window rules only. Hardware/app-specific rules belong in local.conf.
-for_window [title="Picture-in-Picture"] floating enable, sticky enable
-for_window [title="Picture in picture"] floating enable, sticky enable
-for_window [title="Save File"] floating enable
-for_window [app_id="pavucontrol"] floating enable
-for_window [app_id="org.gnome.Nautilus"] floating disable

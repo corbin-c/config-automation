@@ -1,28 +1,28 @@
 * {
-  font-family: "JetBrains Mono", "Fira Code", "FontAwesome", monospace;
-  font-size: 12px;
+  font-family: "JetBrains Mono", "FontAwesome", monospace;
+  font-size: 11px;
   min-height: 0;
 }
 window#waybar {
-  background: rgba(30, 30, 46, 0.94);
+  background: rgba(30, 30, 46, 0.96);
   color: #cdd6f4;
   border-right: 1px solid #313244;
 }
-.modules-left, .modules-center, .modules-right { padding: 5px 0; }
+.modules-left, .modules-center, .modules-right { padding: 3px 0; }
 #workspaces button {
   color: #a6adc8;
-  padding: 5px 0;
-  margin: 2px 5px;
-  border-radius: 6px;
+  padding: 4px 0;
+  margin: 1px 3px;
+  border-radius: 4px;
   background: transparent;
 }
 #workspaces button.focused { color: #1e1e2e; background: #89b4fa; }
 #workspaces button.urgent { color: #1e1e2e; background: #f38ba8; }
-#mode, #clock, #battery, #network, #pulseaudio, #idle_inhibitor,
-#custom-clipboard, #tray { padding: 7px 0; margin: 1px 0; }
+#custom-clipboard, #battery, #network, #pulseaudio, #clock, #tray {
+  padding: 5px 0;
+  margin: 1px 0;
+}
 #battery.warning { color: #fab387; }
 #battery.critical { color: #f38ba8; }
 #network.disconnected, #pulseaudio.muted { color: #6c7086; }
 #custom-clipboard { color: #89b4fa; }
-
-#custom-recording { color: #f38ba8; font-weight: bold; }

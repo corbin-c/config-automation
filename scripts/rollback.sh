@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE="${XDG_STATE_HOME:-$HOME/.local/state}/workstation-backups"
-usage() { echo "Usage: $0 list | restore BACKUP-DIRECTORY-NAME" >&2; exit 2; }
+BASE="${XDG_STATE_HOME:-$HOME/.local/state}/sway-workstation-backups"
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+usage() { echo "Usage: $0 list | restore BACKUP-DIRECTORY" >&2; exit 2; }
 [[ $# -ge 1 ]] || usage
 case "$1" in
   list)
@@ -17,17 +18,20 @@ case "$1" in
     while IFS= read -r -d '' item; do
       rel="${item#"$backup"/}"
       target="$HOME/$rel"
+      if [[ -L "$target" ]] && [[ "$(readlink -f -- "$target" 2>/dev/null || true)" == "$ROOT"/dotfiles/* ]]; then
+        rm -- "$target"
+      fi
       if [[ -e "$target" || -L "$target" ]]; then
-        printf 'SKIP (target exists): %s\n' "$target"
-        skipped=$((skipped+1))
+        printf 'SKIP (destination exists): %s\n' "$target"
+        skipped=$((skipped + 1))
         continue
       fi
       mkdir -p "$(dirname "$target")"
       mv -- "$item" "$target"
       printf 'RESTORED: %s\n' "$target"
-      restored=$((restored+1))
+      restored=$((restored + 1))
     done < <(find "$backup" -mindepth 1 \( -type f -o -type l \) -print0)
-    printf 'Restore complete: %d restored, %d skipped. Backup directory retained: %s\n' "$restored" "$skipped" "$backup"
+    printf 'Restore complete: %d restored, %d skipped. Backup retained at %s\n' "$restored" "$skipped" "$backup"
     ;;
   *) usage ;;
 esac
