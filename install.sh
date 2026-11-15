@@ -45,9 +45,12 @@ if [[ "${ID:-}" != ubuntu || "${VERSION_ID:-}" != 24.04 ]]; then
 fi
 
 mapfile -t packages < <(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/packages/desktop.apt")
+mapfile -t rofi_build_packages < <(grep -Ev '^[[:space:]]*(#|$)' "$ROOT/packages/rofi-build.apt")
 if ((DRY_RUN)); then
   printf 'Target: %s\n' "$PRETTY_NAME"
-  printf 'APT packages:\n'; printf '  %s\n' "${packages[@]}"
+  printf 'APT runtime packages:\n'; printf '  %s\n' "${packages[@]}"
+  printf 'Rofi 2.1.0 build dependencies:\n'; printf '  %s\n' "${rofi_build_packages[@]}"
+  printf 'Rofi: build upstream 2.1.0 with Wayland and XCB backends into /usr/local\n'
   printf 'Autotiling: pipx install autotiling==1.9.3\n'
   if ((WITH_FLASHFOCUS)); then
     printf 'Flashfocus: pipx install flashfocus==2.9.0 (with native build dependencies)\n'
@@ -64,7 +67,12 @@ SUDO=(sudo)
 if (( ! NO_PACKAGES )); then
   command -v sudo >/dev/null 2>&1 || { echo "sudo is required to install APT packages." >&2; exit 1; }
   "${SUDO[@]}" apt-get update
-  "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
+  "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}" "${rofi_build_packages[@]}"
+
+  # Ubuntu Noble provides Rofi 1.7.5 without native Wayland support. Build the
+  # tested upstream release into /usr/local; keep the distro package database
+  # and /usr/bin namespace untouched. Both Wayland and XCB backends are required.
+  "$ROOT/scripts/install-rofi.sh"
 
   # autotiling is not packaged in Ubuntu 24.04 Noble. Install the upstream
   # release in its own pipx environment; pin it for reproducibility.
@@ -97,7 +105,7 @@ if (( ! NO_PACKAGES )); then
   "${SUDO[@]}" install -D -m 0755 "$ROOT/system/sway-workstation-session" /usr/local/bin/sway-workstation-session
   "${SUDO[@]}" install -D -m 0644 "$ROOT/system/sway-workstation.desktop" /usr/local/share/wayland-sessions/sway-workstation.desktop
 else
-  echo "Skipping APT and pipx installation (--no-packages). The Sway (workstation) GDM entry is not installed in this mode."
+  echo "Skipping APT, upstream Rofi build and pipx installation (--no-packages). The Sway (workstation) GDM entry is not installed in this mode."
 fi
 
 "$ROOT/scripts/deploy.sh"

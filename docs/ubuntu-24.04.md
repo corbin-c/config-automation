@@ -1,8 +1,8 @@
 # Ubuntu 24.04 compatibility notes
 
-The repository uses Ubuntu Noble packages for Sway, Waybar, Rofi, Mako, Swaylock, Swayidle, cliphist, wl-clipboard, XWayland, portal backends, the PolicyKit agent, Breeze cursors, Font Awesome and wf-recorder.
+The repository uses Ubuntu Noble packages for Sway, Waybar, Mako, Swaylock, Swayidle, cliphist, wl-clipboard, XWayland, portal backends, the PolicyKit agent, Breeze cursors, Font Awesome and wf-recorder. Rofi is built from its upstream 2.1.0 release archive.
 
-Sway is installed from Ubuntu's `universe` repository. The Rofi package in Noble is the X11 build; it runs under Sway through XWayland. The custom window picker does not use Rofi's X11 window enumeration: it queries Sway's IPC tree and asks Rofi to display the resulting list.
+Sway is installed from Ubuntu's `universe` repository. Ubuntu Noble's packaged Rofi 1.7.5 does not provide the native Wayland backend required for the original Sway experience. The installer therefore omits the Ubuntu `rofi` package and builds upstream Rofi 2.1.0 into `/usr/local`, explicitly enabling both Wayland and XCB backends. The distro's `/usr/bin/rofi` is left untouched if already present. The custom window picker queries Sway's IPC tree and asks Rofi to display the resulting list; it does not depend on Rofi's built-in X11 window enumeration.
 
 The upstream `autotiling` helper is installed from PyPI at version 1.9.3 using pipx. It uses i3ipc to watch Sway events and choose `splitv` or `splith` based on the focused container's dimensions. This is distinct from Sway's built-in `default_orientation auto`, which does not provide the same event-driven behavior. PyPI's published release history currently identifies 1.9.3 as the latest published release. See the upstream [project documentation](https://github.com/nwg-piotr/autotiling) and [PyPI release metadata](https://pypi.org/project/autotiling/).
 

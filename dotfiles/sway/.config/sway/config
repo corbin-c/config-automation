@@ -66,7 +66,7 @@ exec $HOME/.local/bin/start-autotiling
 exec waybar
 exec mako
 exec nm-applet --indicator
-exec swayidle -w timeout 300 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock' before-sleep 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock'
+exec swayidle -w timeout 300 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts' before-sleep 'swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts'
 # Ubuntu 24.04 ships wl-clipboard 2.2.1. Set CLIPBOARD_TYPE explicitly
 # rather than relying on the newer wl-paste behavior added after 2.3.0.
 exec wl-paste --type text --watch sh -c 'export CLIPBOARD_TYPE=text/plain;charset=utf-8; exec cliphist store'
@@ -92,7 +92,7 @@ bindsym Alt+F4 kill
 bindsym $mod+Shift+c reload
 bindsym Control+Shift+BackSpace reload
 bindsym Alt+Space exec --no-startup-id $HOME/.local/bin/sway-window-switcher
-bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
+bindsym $mod+Shift+q exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts
 bindsym F11 fullscreen
 bindsym $mod+exclam layout tabbed
 bindsym $mod+colon layout toggle split
@@ -103,7 +103,7 @@ bindsym $mod+F12 focus parent
 # Super+Delete opens the mode; Escape returns to normal mode.
 set $mode_exit "<span foreground='#f38ba8'><b>Power</b></span>  <span foreground='#cdd6f4'>(l) lock  (e) logout  (u) suspend  (r) reboot  (s) shutdown</span>"
 mode --pango_markup $mode_exit {
-    bindsym l mode "default", exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts --clock
+    bindsym l mode "default", exec swaylock --config "$HOME/.config/swaylock/config" --show-failed-attempts
     bindsym e exec swaymsg exit
     bindsym u mode "default", exec systemctl suspend
     bindsym r exec systemctl reboot

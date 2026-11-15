@@ -1,6 +1,6 @@
 # Minimal Ubuntu Sway Session
 
-**Version:** 0.1.5  
+**Version:** 0.1.6  
 **Target:** Ubuntu 24.04 LTS (Noble), with the standard GNOME desktop and GDM installed.
 
 This repository adds a separate Sway login session. It does not replace GNOME or attempt to turn GNOME Shell into a tiling window manager.
@@ -9,7 +9,7 @@ This repository adds a separate Sway login session. It does not replace GNOME or
 
 Included:
 
-- Ubuntu-packaged Sway, Waybar, Rofi, Mako, Swaylock and Swayidle.
+- Ubuntu-packaged Sway, Waybar, Mako, Swaylock and Swayidle. Rofi 2.1.0 is built from the official upstream release archive with both native Wayland and XCB backends, installed under `/usr/local`; Ubuntu's `/usr/bin/rofi` package is not installed or replaced.
 - Upstream `autotiling` 1.9.3, installed in an isolated `pipx` environment and launched by its absolute path. It chooses split orientation from the focused container dimensions; it is not a fixed alternating-orientation algorithm.
 - The exact original Rofi `config.rasi` from the supplied dotfiles, restored byte-for-byte (including its original colors, font and left-anchored geometry). The separate original `Manjaro.rasi` and `Arc-dark.rasi` files are also preserved.
 - The user's original narrow, 12px vertical Waybar layout and Catppuccin Mocha palette. The Manjaro-only Waybar template import was replaced with local CSS; sunset controls were removed as previously requested.
@@ -46,7 +46,7 @@ Options:
 ./install.sh --no-packages         # deploy files only; dependencies must already exist
 ```
 
-The installer checks for Ubuntu 24.04. It installs APT packages from Ubuntu repositories using `--no-install-recommends`; this includes `breeze-cursor-theme`, `wf-recorder`, `fd-find`, `thunar`, `pipx` and the existing desktop dependencies. `autotiling` 1.9.3 and Flashfocus 2.9.0 are pinned PyPI applications installed into isolated pipx environments, not Ubuntu's system Python.
+The installer checks for Ubuntu 24.04. It installs runtime packages and Rofi build dependencies from Ubuntu repositories using `--no-install-recommends`. It then downloads the official Rofi 2.1.0 release archive, builds with Meson while explicitly requiring both `wayland` and `xcb` backends, and installs it under `/usr/local`. The Ubuntu `rofi` package is deliberately omitted. Build dependencies remain installed; this avoids removing libraries needed by the locally built binary. The installer skips rebuilding when `/usr/local/bin/rofi` already reports version 2.1.0 and both backends. `autotiling` 1.9.3 and Flashfocus 2.9.0 are pinned PyPI applications installed into isolated pipx environments, not Ubuntu's system Python.
 
 The installer adds one session entry and wrapper:
 
@@ -55,7 +55,7 @@ The installer adds one session entry and wrapper:
 
 The wrapper sets `XCURSOR_THEME=breeze_cursors` and `XCURSOR_SIZE=24` for the Sway process tree. Sway then propagates those variables to the user D-Bus/systemd activation environment. The standard Ubuntu Sway session entry is left unchanged, and GNOME's GSettings cursor preference is not edited. GTK applications that explicitly prefer the saved GNOME cursor setting may still need separate verification.
 
-`--no-packages` skips APT and pipx installation and does not install the additional GDM entry. Use the full install for the intended cursor behavior.
+`--no-packages` skips APT, the Rofi source build and pipx installation, and does not install the additional GDM entry. Use the full install for a complete setup. The Sway session wrapper puts `/usr/local/bin` before Ubuntu system paths so the upstream Rofi binary is selected consistently.
 
 ## GNOME fallback
 
@@ -143,9 +143,9 @@ Static checks do not prove that Sway starts correctly on the target laptop. Befo
 7. Test Super+D app launcher, Super+Space Spotlight search, and Super+Tab native Wayland window picker. If the picker does not appear, inspect `~/.local/state/sway-workstation/window-switcher.log`; it records invocation and Rofi/Sway IPC errors.
 8. Copy text and images, open clipboard history by clicking the Waybar clipboard icon and with Super+V, select each item, and verify paste MIME types. If the icon action fails, inspect `~/.local/state/sway-workstation/clipboard-menu.log`.
 9. Check pointer shape in GTK, Qt, browser and XWayland applications.
-10. Test the exit menu (lock, logout, suspend, reboot, shutdown) and confirm Escape cancels it.
+10. Test the exit menu (lock, logout, suspend, reboot, shutdown) and confirm Escape cancels it. Locking uses Ubuntu's standard `swaylock` options (no swaylock-effects-only flags); test both Super+Delete then `l` and Super+Shift+Q.
 11. Test recording mode: `r` selects a region and records WebM/VP8 without audio; Shift+`r` selects a region and records MP4 with audio; confirm the countdown, Escape cancellation, Super+Escape stop, output location and Waybar indicator.
 12. Test NetworkManager applet, PolicyKit prompts, screen sharing/portals, audio and suspend/resume.
 13. Log out of Sway and confirm GNOME still works normally and retains its cursor preference.
 
-No VM test has been performed as part of producing this archive. This update addresses the reported configuration defects, but should still be validated in the VM.
+The package scripts and static tests were checked, but no full Ubuntu VM build or graphical session test was performed while producing this archive. The Rofi source download and compilation therefore still need to be exercised in the target VM.
